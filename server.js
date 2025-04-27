@@ -7,7 +7,7 @@ import connectDB from "./config/mongodb.js"; // This is your DB config file
 import cookieParser from "cookie-parser";
 import visitorRoutes from "./routes/visitorRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js";
-
+import verifyVisitorRoutes from "./routes/VerifyVisitorRoutes.js"; 
 dotenv.config(); // Load .env file
 
 const app = express();
@@ -25,10 +25,11 @@ app.get("/", (req, res) => {
   res.send("🚀 Welcome to the VMS Backend!");
 });
 
+//Routes
+app.use("/api/auth", visitorRoutes);
+app.use("/api/staff", staffRoutes);
+app.use("/api/verify-visitors", verifyVisitorRoutes);
+
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
-
-app.use("/api/auth", visitorRoutes);
-
-app.use("/api/staff", staffRoutes);
