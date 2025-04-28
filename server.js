@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import visitorRoutes from "./routes/visitorRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js";
 import hostRoutes from "./routes/hostRoutes.js";
+import verifyVisitorRoutes from "./routes/VerifyVisitorRoutes.js"; 
 
 dotenv.config(); // Load .env file
 
@@ -26,12 +27,13 @@ app.get("/", (req, res) => {
   res.send("🚀 Welcome to the VMS Backend!");
 });
 
+//Routes
+app.use("/api/auth", visitorRoutes);
+app.use("/api/staff", staffRoutes);
+app.use("/api/verify-visitors", verifyVisitorRoutes);
+app.use("/api/host", hostRoutes);
+
 // Start Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
 
-app.use("/api/auth", visitorRoutes);
-
-app.use("/api/staff", staffRoutes);
-
-app.use("/api/host", hostRoutes);
