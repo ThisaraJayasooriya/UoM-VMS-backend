@@ -47,7 +47,7 @@ export const signupVisitor = async (req, res) => {
 
   try {
     // Check for existing records
-    const [emailExists, usernameExists] = await Promise.all([
+    const [emailExists, usernameExists] = await Promise.all([ 
       VisitorSignup.findOne({ email }),
       VisitorSignup.findOne({ username })
     ]);
@@ -88,14 +88,24 @@ export const signupVisitor = async (req, res) => {
       });
     }
 
+    // Validate password strength
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    if (!strongPasswordRegex.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
+      });
+    }
+
     // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const salt = await bcrypt.genSalt(10); // Consistent salt rounds
+    
+    const hashedPassword = await bcrypt.hash(password, 10); // Ensure salt rounds match
 
     // Generate visitor ID
     const visitorId = `VMS-${nanoid(6)}`;
 
-    // Create new visitor - using undefined instead of null
+    // Create new visitor
     const newVisitor = await VisitorSignup.create({
       visitorId,
       firstName,
@@ -106,7 +116,7 @@ export const signupVisitor = async (req, res) => {
       nationality,
       nicNumber: nationality === "Sri Lankan" ? nicNumber : undefined,
       passportNumber: nationality === "Foreigner" ? passportNumber : undefined,
-      password: hashedPassword,
+      password, // Let the model handle the hashing
     });
 
     // Generate JWT token
@@ -133,7 +143,7 @@ export const signupVisitor = async (req, res) => {
 
   } catch (error) {
     console.error("Signup error:", error);
-    
+
     // Handle duplicate key errors
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
@@ -148,7 +158,7 @@ export const signupVisitor = async (req, res) => {
         message 
       });
     }
-    
+
     // Handle other errors
     return res.status(500).json({ 
       success: false,

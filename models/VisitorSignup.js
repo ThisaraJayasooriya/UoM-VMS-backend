@@ -53,7 +53,7 @@ const visitorSignupSchema = new mongoose.Schema(
         return this.nationality === "Sri Lankan";
       },
       unique: true,
-      sparse: true, // Allows multiple null values
+      sparse: true,
       validate: {
         validator: function(value) {
           if (this.nationality === "Sri Lankan") {
@@ -61,8 +61,8 @@ const visitorSignupSchema = new mongoose.Schema(
           }
           return true;
         },
-        message: "Invalid NIC format (use 123456789V or 200012345678)"
-      }
+        message: "Invalid NIC format (use 123456789V or 200012345678)",
+      },
     },
     passportNumber: {
       type: String,
@@ -70,7 +70,7 @@ const visitorSignupSchema = new mongoose.Schema(
         return this.nationality === "Foreigner";
       },
       unique: true,
-      sparse: true, // Allows multiple null values
+      sparse: true,
       validate: {
         validator: function(value) {
           if (this.nationality === "Foreigner") {
@@ -78,12 +78,20 @@ const visitorSignupSchema = new mongoose.Schema(
           }
           return true;
         },
-        message: "Passport number must be 5-20 alphanumeric characters"
-      }
+        message: "Passport number must be 5-20 alphanumeric characters",
+      },
     },
     password: {
       type: String,
       required: true,
+      select: false, 
+      validate: {
+        validator: function (value) {
+          return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(value);
+        },
+        message:
+          "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
+      },
     },
   },
   { timestamps: true }
@@ -93,17 +101,28 @@ const visitorSignupSchema = new mongoose.Schema(
 visitorSignupSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   
+  // Debugging logs - ADD THESE LINES
+  console.log("\n=== Password Hashing Debug ===");
+  console.log("Original password:", this.password);
+  console.log("Is modified:", this.isModified("password"));
+
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+
+    // Optional: console.log("Hashed Password:", this.password);
+    // More debugging - ADD THESE LINES
+    console.log("Salt used:", salt);
+    console.log("Hashed password:", this.password);
+    console.log("============================\n");
     
     // Ensure either nicNumber or passportNumber is set based on nationality
     if (this.nationality === "Sri Lankan") {
-      this.passportNumber = undefined; // Use undefined instead of null
+      this.passportNumber = undefined;
     } else {
       this.nicNumber = undefined;
     }
-    
+
     next();
   } catch (error) {
     next(error);
