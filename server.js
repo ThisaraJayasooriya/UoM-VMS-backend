@@ -4,7 +4,7 @@ import cors from "cors";
 import connectDB from "./config/mongodb.js";
 import cookieParser from "cookie-parser";
 import visitorAuthRoutes from "./routes/visitorAuthRoutes.js";
-import errorHandler from "./middleware/errorHandler.js"; // ✅ Correct import
+import errorHandler from "./middleware/errorHandler.js";
 import rateLimit from "express-rate-limit";
 import staffRoutes from "./routes/staffRoutes.js";
 import hostRoutes from "./routes/hostRoutes.js";
@@ -48,8 +48,14 @@ app.get("/", (req, res) => {
   res.send("🚀 Welcome to the VMS Backend API");
 });
 
-
 app.use("/api/auth/visitor", authLimiter, visitorAuthRoutes);
+console.log('Mounted auth routes at /api/auth/visitor');
+visitorAuthRoutes.stack.forEach((r) => {
+  if (r.route && r.route.path) {
+    console.log(`Full path: /api/auth/visitor${r.route.path} [${Object.keys(r.route.methods).join(", ").toUpperCase()}]`);
+  }
+});
+
 app.use("/api/staff", staffRoutes);
 app.use("/api/verify-visitors", verifyVisitorRoutes);
 app.use("/api/host", hostRoutes);
@@ -63,4 +69,3 @@ app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🔗 Base URL: http://localhost:${PORT}`);
 });
-
