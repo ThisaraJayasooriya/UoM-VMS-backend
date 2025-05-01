@@ -1,4 +1,3 @@
-// models/Staff.js
 import mongoose from "mongoose";
 
 const staffSchema = new mongoose.Schema({
@@ -6,11 +5,11 @@ const staffSchema = new mongoose.Schema({
   email: String,
   phone: String,
   password: String,
-  role: String,
+  role: { type: String, lowercase: true }, // Ensures lowercase
   userID: String,
   faculty: String,
   department: String,
-  nicNumber: String, // ✅ Added NIC / Passport No
+  nicNumber: String,
   registeredDate: String,
 });
 
