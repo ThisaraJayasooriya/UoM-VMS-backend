@@ -1,65 +1,55 @@
 import express from "express";
 import { signupVisitor } from "../controllers/VisitorSignupController.js";
 import { 
-  loginVisitor,  
+  loginVisitor, 
   forgotPassword, 
-  resetPassword,
-  verifyToken
+  resetPassword, 
+  verifyToken 
 } from "../controllers/AuthController.js";
-
-import bcrypt from 'bcrypt';
-import VisitorSignup from "../models/VisitorSignup.js"; // You need to import your model to use it here
+import bcrypt from "bcrypt";
+import VisitorSignup from "../models/VisitorSignup.js";
 
 const router = express.Router();
 
-// POST /api/auth/visitor/signup
+// Visitor Authentication Routes
 router.post("/signup", signupVisitor);
-
-// POST /api/auth/visitor/login
 router.post("/login", loginVisitor);
-
-// POST /api/auth/visitor/forgot-password
 router.post("/forgot-password", forgotPassword);
-
-// POST /api/auth/visitor/reset-password
 router.post("/reset-password", resetPassword);
+router.get("/verify", verifyToken);
 
-// POST /api/auth/visitor/test-hash (for testing password hashing and matching)
-router.post('/test-hash', async (req, res) => {
-  const { password } = req.body;
+// Log all registered routes for debugging
+router.stack.forEach((r) => {
+  if (r.route && r.route.path) {
+    console.log(`Route registered: ${r.route.path} [${Object.keys(r.route.methods).join(", ").toUpperCase()}]`);
+  }
+});
 
+// Development/testing routes (removed for production but commented for reference)
+/*
+router.post("/test-hash", async (req, res) => {
   try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ error: "Password is required" });
+    }
+    
     const hash = await bcrypt.hash(password, 10);
     const match = await bcrypt.compare(password, hash);
-
-    res.json({ hash, match });
-  } catch (error) {
-    res.status(500).json({ message: 'Error hashing password', error });
-  }
-});
-
-// POST /api/auth/visitor/test-password (NEW: for testing password matching from DB)
-router.post('/test-password', async (req, res) => {
-  const { username, password } = req.body;
-
-  try {
-    const user = await VisitorSignup.findOne({ username })
-      .select('+password'); // select password field explicitly if schema has select: false
-
-    if (!user) return res.json({ error: "User not found" });
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    res.json({
-      userFound: true,
-      passwordMatch: isMatch,
-      storedHash: user.password.substring(0, 10) + '...' // Partial hash for checking
+    
+    res.json({ 
+      success: true,
+      hash: hash.substring(0, 15) + "...",
+      match 
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Hashing error:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Internal server error" 
+    });
   }
 });
-
-// GET /api/auth/visitor/verify
-router.get("/verify", verifyToken);
+*/
 
 export default router;

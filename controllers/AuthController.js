@@ -26,7 +26,7 @@ const validatePassword = (password) => {
 
 // Visitor Login Controller
 export const loginVisitor = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, rememberMe } = req.body;
 
   // Validate input
   if (!username?.trim() || !password?.trim()) {
@@ -44,8 +44,8 @@ export const loginVisitor = async (req, res) => {
     }
 
     // Log the entered password and stored hashed password for debugging
-    console.log("Entered Password:", password);  // Log entered password
-    console.log("Stored Hashed Password:", visitor.password);  // Log the hashed password from DB
+    console.log("Entered Password:", password);
+    console.log("Stored Hashed Password:", visitor.password);
 
     // Check account status if exists
     if (visitor.status && visitor.status.toLowerCase() !== "active") {
@@ -54,20 +54,21 @@ export const loginVisitor = async (req, res) => {
 
     // Compare passwords
     const isMatch = await bcrypt.compare(password, visitor.password);
-    console.log("Password Match:", isMatch);  // Check if passwords match
+    console.log("Password Match:", isMatch);
 
     if (!isMatch) {
       return errorResponse(res, 401, "Invalid credentials");
     }
 
-    // Generate JWT token
+    // Enhanced token generation with rememberMe
     const token = jwt.sign(
       {
         id: visitor._id,
         role: "visitor",
+        rememberMe: Boolean(rememberMe) // Explicitly include rememberMe in token
       },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: rememberMe ? "30d" : "1h" } // Longer expiry for rememberMe
     );
 
     // Omit sensitive data in response
@@ -85,6 +86,7 @@ export const loginVisitor = async (req, res) => {
       message: "Login successful",
       token,
       visitor: visitorData,
+      rememberMe: Boolean(rememberMe) // Explicitly send rememberMe status
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -211,6 +213,7 @@ export const verifyToken = async (req, res) => {
         email: visitor.email,
         nationality: visitor.nationality,
       },
+      rememberMe: decoded.rememberMe || false // Include rememberMe status in verification response
     });
   } catch (error) {
     console.error("Token verification error:", error);
