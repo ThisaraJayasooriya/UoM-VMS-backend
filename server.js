@@ -8,7 +8,7 @@ import errorHandler from "./middleware/errorHandler.js";
 import rateLimit from "express-rate-limit";
 import staffRoutes from "./routes/staffRoutes.js";
 import hostRoutes from "./routes/hostRoutes.js";
-import verifyVisitorRoutes from "./routes/VerifyVisitorRoutes.js"; 
+import verifyVisitorRoutes from "./routes/VerifyVisitorRoutes.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -48,11 +48,11 @@ app.get("/", (req, res) => {
   res.send("🚀 Welcome to the VMS Backend API");
 });
 
-app.use("/api/auth/visitor", authLimiter, visitorAuthRoutes);
-console.log('Mounted auth routes at /api/auth/visitor');
+app.use("/api/auth", authLimiter, visitorAuthRoutes); // Changed from "/api/auth/visitor" to "/api/auth"
+console.log('Mounted auth routes at /api/auth');
 visitorAuthRoutes.stack.forEach((r) => {
   if (r.route && r.route.path) {
-    console.log(`Full path: /api/auth/visitor${r.route.path} [${Object.keys(r.route.methods).join(", ").toUpperCase()}]`);
+    console.log(`Full path: /api/auth${r.route.path} [${Object.keys(r.route.methods).join(", ").toUpperCase()}]`);
   }
 });
 
