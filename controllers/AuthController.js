@@ -154,7 +154,7 @@ export const forgotPassword = async (req, res) => {
         subject: "Password Reset Request - University of Moratuwa",
         html: `
           <h2>Password Reset Request</h2>
-          <p>You requested a password reset for your University of Moratuwa account.</p>
+          <p>You requested a password reset for your University of Moratuwa , Visitor Management System account.</p>
           <p>Click the link below to reset your password:</p>
           <a href="${resetLink}">Reset Password</a>
           <p>This link will expire in 1 hour.</p>
