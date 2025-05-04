@@ -39,28 +39,34 @@ app.use(
 // Rate limiter for auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP
+  max: 100,
   message: "Too many requests from this IP, please try again later",
 });
 
-// Routes
+// Base route
 app.get("/", (req, res) => {
   res.send("🚀 Welcome to the VMS Backend API");
 });
 
-app.use("/api/auth", authLimiter, visitorAuthRoutes); // Changed from "/api/auth/visitor" to "/api/auth"
-console.log('Mounted auth routes at /api/auth');
+// ✅ Auth routes mounted at /api/auth/visitor
+app.use("/api/auth/visitor", authLimiter, visitorAuthRoutes);
+console.log("✅ Mounted visitor auth routes at /api/auth/visitor");
+
+// Log registered visitor auth routes
 visitorAuthRoutes.stack.forEach((r) => {
   if (r.route && r.route.path) {
-    console.log(`Full path: /api/auth${r.route.path} [${Object.keys(r.route.methods).join(", ").toUpperCase()}]`);
+    console.log(
+      `Route registered: /api/auth/visitor${r.route.path} [${Object.keys(r.route.methods).join(", ").toUpperCase()}]`
+    );
   }
 });
 
+// Other routes
 app.use("/api/staff", staffRoutes);
 app.use("/api/verify-visitors", verifyVisitorRoutes);
 app.use("/api/host", hostRoutes);
 
-// Error handling middleware (keep this last)
+// Error handling middleware
 app.use(errorHandler);
 
 // Start Server
