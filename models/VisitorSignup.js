@@ -100,13 +100,19 @@ const visitorSignupSchema = new mongoose.Schema(
     resetPasswordExpires: {
       type: Date,
     },
+    skipPasswordHash: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
 
 // Pre-save hook to hash the password before saving
 visitorSignupSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+  if (this.skipPasswordHash || !this.isModified("password")) {
+    return next();
+  }
 
   console.log("\n=== Password Hashing Debug ===");
   console.log("Original password:", this.password);

@@ -30,7 +30,7 @@ const validatePassword = (password) => {
 
 // Configure Nodemailer for sending emails
 const transporter = nodemailer.createTransport({
-  service: "gmail", // You can use other services like SendGrid, Mailgun, etc.
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -78,10 +78,10 @@ export const loginVisitor = async (req, res) => {
       {
         id: visitor._id,
         role: "visitor",
-        rememberMe: Boolean(rememberMe), // Explicitly include rememberMe in token
+        rememberMe: Boolean(rememberMe),
       },
       process.env.JWT_SECRET,
-      { expiresIn: rememberMe ? "30d" : "1h" } // Longer expiry for rememberMe
+      { expiresIn: rememberMe ? "30d" : "1h" }
     );
 
     // Omit sensitive data in response
@@ -99,7 +99,7 @@ export const loginVisitor = async (req, res) => {
       message: "Login successful",
       token,
       visitor: visitorData,
-      rememberMe: Boolean(rememberMe), // Explicitly send rememberMe status
+      rememberMe: Boolean(rememberMe),
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -109,22 +109,19 @@ export const loginVisitor = async (req, res) => {
 
 // Forgot Password Controller
 export const forgotPassword = async (req, res) => {
-  const { contact } = req.body; // Email or phone number from frontend
+  const { contact } = req.body;
 
   if (!contact?.trim()) {
     return errorResponse(res, 400, "Email or phone number is required");
   }
 
   try {
-    // Determine if the input is an email or phone number
     const isEmail = contact.includes("@");
     const query = isEmail
       ? { email: { $regex: new RegExp(`^${contact.trim()}$`, "i") } }
       : { phoneNumber: contact.trim() };
 
-    // Find the user by email or phone number
     const visitor = await VisitorSignup.findOne(query);
-    // Generic response for security (don't reveal if user exists)
     if (!visitor) {
       return res.status(200).json({
         success: true,
@@ -132,29 +129,27 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    // Generate a reset token using JWT
     const resetToken = jwt.sign({ id: visitor._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h", // Token expires in 1 hour
+      expiresIn: "1h",
     });
 
-    // Save the token and expiration to the user
     visitor.resetPasswordToken = resetToken;
-    visitor.resetPasswordExpires = Date.now() + 3600000; // 1 hour from now
+    visitor.resetPasswordExpires = Date.now() + 3600000;
     await visitor.save();
 
-    // Handle email or SMS
     if (isEmail) {
-      // Create the reset link
-      const resetLink = `http://localhost:3000/reset-password/${resetToken}`; // Replace with your frontend URL
+      if (!process.env.FRONTEND_URL) {
+        throw new Error("FRONTEND_URL is not defined in the environment variables");
+      }
+      const resetLink = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-      // Send email
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: visitor.email,
         subject: "Password Reset Request - University of Moratuwa",
         html: `
           <h2>Password Reset Request</h2>
-          <p>You requested a password reset for your University of Moratuwa , Visitor Management System account.</p>
+          <p>You requested a password reset for your University of Moratuwa, Visitor Management System account.</p>
           <p>Click the link below to reset your password:</p>
           <a href="${resetLink}">Reset Password</a>
           <p>This link will expire in 1 hour.</p>
@@ -168,7 +163,6 @@ export const forgotPassword = async (req, res) => {
         message: "Password reset link sent to your email",
       });
     } else {
-      // Placeholder for SMS (we'll implement this later)
       console.log(`Password reset token for ${visitor.phoneNumber}: ${resetToken}`);
       return res.status(200).json({
         success: true,
@@ -189,7 +183,6 @@ export const resetPassword = async (req, res) => {
     return errorResponse(res, 400, "Token and new password are required");
   }
 
-  // Validate password strength
   if (!validatePassword(newPassword)) {
     return errorResponse(
       res,
@@ -199,7 +192,6 @@ export const resetPassword = async (req, res) => {
   }
 
   try {
-    // Verify the token
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -217,16 +209,29 @@ export const resetPassword = async (req, res) => {
       return errorResponse(res, 400, "Invalid or expired token");
     }
 
-    // Hash new password
+    console.log("Received newPassword:", newPassword);
+
     const salt = await bcrypt.genSalt(10);
     visitor.password = await bcrypt.hash(newPassword, salt);
+    visitor.skipPasswordHash = true; // Bypass pre-save hook
     visitor.resetPasswordToken = undefined;
     visitor.resetPasswordExpires = undefined;
     await visitor.save();
 
+    // Generate new token for automatic login
+    const newToken = jwt.sign(
+      {
+        id: visitor._id,
+        role: "visitor",
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
     return res.status(200).json({
       success: true,
       message: "Password reset successful",
+      token: newToken,
     });
   } catch (error) {
     console.error("Reset password error:", error);
