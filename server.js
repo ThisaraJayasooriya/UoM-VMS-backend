@@ -9,6 +9,7 @@ import rateLimit from "express-rate-limit";
 import staffRoutes from "./routes/staffRoutes.js";
 import hostRoutes from "./routes/hostRoutes.js";
 import verifyVisitorRoutes from "./routes/VerifyVisitorRoutes.js";
+import appointmentRoutes from './routes/appoiment.routes.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -65,6 +66,7 @@ visitorAuthRoutes.stack.forEach((r) => {
 app.use("/api/staff", staffRoutes);
 app.use("/api/verify-visitors", verifyVisitorRoutes);
 app.use("/api/host", hostRoutes);
+app.use('/api/appointment',appointmentRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
