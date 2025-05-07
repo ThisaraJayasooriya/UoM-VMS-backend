@@ -73,22 +73,18 @@ export const login = async (req, res) => {
       return errorResponse(res, 401, "Invalid credentials");
     }
 
-    // Validate password
-    let isMatch;
-    if (userType === "visitor") {
-      // Visitor passwords are hashed
-      isMatch = await bcrypt.compare(password, user.password);
-      // Check account status
-      if (user.status && user.status.toLowerCase() !== "active") {
-        return errorResponse(res, 403, "Account is not active. Please contact support.");
-      }
-    } else {
-      // Staff passwords are plaintext
-      isMatch = password === user.password;
-    }
+    // Validate password (both visitor and staff passwords are now hashed)
+    const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return errorResponse(res, 401, "Invalid credentials");
+    }
+
+    // For visitors, check account status
+    if (userType === "visitor") {
+      if (user.status && user.status.toLowerCase() !== "active") {
+        return errorResponse(res, 403, "Account is not active. Please contact support.");
+      }
     }
 
     // Prepare user data
@@ -187,7 +183,7 @@ export const forgotPassword = async (req, res) => {
     });
 
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
 
     await user.save();
 
@@ -272,7 +268,8 @@ export const resetPassword = async (req, res) => {
         resetPasswordExpires: { $gt: Date.now() },
       });
       if (user) {
-        user.password = newPassword; // Store as plaintext for staff
+        const salt = await bcrypt.genSalt(10); // Hash staff passwords as well
+        user.password = await bcrypt.hash(newPassword, salt);
       }
     }
 
