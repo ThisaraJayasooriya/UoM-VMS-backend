@@ -13,6 +13,12 @@ import verifyVisitorRoutes from "./routes/VerifyVisitorRoutes.js";
 // Load environment variables from .env file
 dotenv.config();
 
+console.log("Loaded environment variables:", {
+  EMAIL_USER: process.env.EMAIL_USER,
+  EMAIL_PASS: process.env.EMAIL_PASS ? "[REDACTED]" : undefined,
+  CLIENT_URL: process.env.CLIENT_URL
+});
+
 const app = express();
 
 // Connect to MongoDB
