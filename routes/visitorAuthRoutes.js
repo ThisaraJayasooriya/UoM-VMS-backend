@@ -1,7 +1,7 @@
 import express from "express";
 import { signupVisitor } from "../controllers/VisitorSignupController.js";
 import { 
-  loginVisitor, 
+  login, // Changed from loginVisitor to login
   forgotPassword, 
   resetPassword, 
   verifyToken 
@@ -13,7 +13,7 @@ const router = express.Router();
 
 // Visitor Authentication Routes
 router.post("/signup", signupVisitor);
-router.post("/login", loginVisitor);
+router.post("/login", login); // Updated to use login
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.get("/verify", verifyToken);
