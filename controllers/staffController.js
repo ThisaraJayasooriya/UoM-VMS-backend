@@ -1,22 +1,5 @@
 import Staff from "../models/Staff.js";
 import sendEmail from "../utils/sendEmail.js";
-import bcrypt from "bcrypt";
-
-// Password strength validator
-const validatePassword = (password) => {
-  const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-  const result = strongPasswordRegex.test(password);
-  if (!result) {
-    console.log("Password validation failed:", {
-      hasLowercase: /[a-z]/.test(password),
-      hasUppercase: /[A-Z]/.test(password),
-      hasNumber: /\d/.test(password),
-      hasSpecialChar: /[\W_]/.test(password),
-      length: password.length >= 8,
-    });
-  }
-  return result;
-};
 
 // POST: Register staff
 export const registerStaff = async (req, res) => {
@@ -39,42 +22,28 @@ export const registerStaff = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid email format" });
     }
 
-    // Validate password strength
-    if (!validatePassword(password)) {
-      console.error("Invalid password:", password);
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.",
-      });
+    // Check for duplicates (removed nicNumber check)
+    const [usernameExists, userIDExists] = await Promise.all([
+      Staff.findOne({ username: { $regex: new RegExp(`^${username.trim()}$`, "i") } }),
+      Staff.findOne({ userID: { $regex: new RegExp(`^${userID.trim()}$`, "i") } }),
+    ]);
+
+    if (usernameExists) {
+      console.error("Duplicate username found:", username);
+      return res.status(400).json({ success: false, message: "Username already taken" });
+    }
+    if (userIDExists) {
+      console.error("Duplicate userID found:", userID);
+      return res.status(400).json({ success: false, message: "UserID already taken" });
     }
 
-    // Check for duplicates
-    const existingStaff = await Staff.findOne({
-      $or: [
-        { username: { $regex: new RegExp(`^${username.trim()}$`, "i") } },
-        { email: { $regex: new RegExp(`^${email.trim()}$`, "i") }, role: safeRole.toLowerCase() },
-      ].filter(Boolean),
-    });
-
-    if (existingStaff) {
-      const conflictField = existingStaff.username?.toLowerCase() === username.trim().toLowerCase() ? "Username"
-        : (existingStaff.email?.toLowerCase() === email.trim().toLowerCase() && existingStaff.role === safeRole.toLowerCase()) ? "Email for this role"
-        : "Unknown field";
-      console.error(`Duplicate ${conflictField} found for:`, { username, email, role: safeRole });
-      return res.status(400).json({ success: false, message: `${conflictField} already exists` });
-    }
-
-    // Hash the password (already handled by schema pre-save hook, but keeping for clarity)
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password.trim(), salt);
-
-    // Create new staff with hashed password
-    const newStaff = new Staff({
+    // Create new staff; password hashing and validation handled by the model
+    const newStaff = await Staff.create({
       name: name.trim(),
       username: username.trim(),
       email: email.trim(),
       phone: phone?.trim() || "",
-      password: hashedPassword,
+      password: password.trim(), // Pass plain password; model will hash it
       role: safeRole.toLowerCase(),
       userID: userID.trim(),
       faculty: faculty?.trim() || "",
@@ -84,11 +53,17 @@ export const registerStaff = async (req, res) => {
       registeredDate: new Date(),
     });
 
-    await newStaff.save();
     console.log("Staff saved successfully:", newStaff.userID);
 
-    // Send confirmation email with password and userID in the login link
-    const loginUrl = `${process.env.CLIENT_URL}/login`;
+    // Debug log to check FRONTEND_URL
+    console.log("FRONTEND_URL in StaffController:", process.env.FRONTEND_URL || "Not defined, using fallback");
+
+    // Use FRONTEND_URL instead of CLIENT_URL
+    const baseUrl = process.env.FRONTEND_URL && process.env.FRONTEND_URL !== "undefined" ? process.env.FRONTEND_URL : 'http://localhost:5173';
+    const loginUrl = `${baseUrl}/login`;
+    console.log("Generated loginUrl:", loginUrl);
+
+    // Send confirmation email without including the password
     const emailResult = await sendEmail({
       to: newStaff.email,
       subject: "Welcome to UoM Visitor Management System",
@@ -102,9 +77,8 @@ export const registerStaff = async (req, res) => {
             <li><strong>Username:</strong> ${newStaff.username}</li>
             <li><strong>Role:</strong> ${newStaff.role.charAt(0).toUpperCase() + newStaff.role.slice(1)}</li>
             <li><strong>Email:</strong> ${newStaff.email}</li>
-            <li><strong>Password:</strong> ${password}</li>
           </ul>
-          <p>Please use your User ID and password to log in to the system.</p>
+          <p>Please use your username and the password you set to log in to the system.</p>
           <p style="margin-top: 20px;">
             <a href="${loginUrl}" style="background-color: #124E66; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Log In Now</a>
           </p>
@@ -126,10 +100,49 @@ export const registerStaff = async (req, res) => {
       });
     }
 
-    res.status(201).json({ success: true, message: "Staff registered successfully" });
+    return res.status(201).json({
+      success: true,
+      message: "Staff registered successfully",
+      data: {
+        staff: {
+          id: newStaff._id,
+          userID: newStaff.userID,
+          name: newStaff.name,
+          username: newStaff.username,
+          email: newStaff.email,
+          role: newStaff.role,
+        },
+      },
+    });
   } catch (error) {
-    console.error("Register error:", error.message, "Stack:", error.stack);
-    res.status(500).json({ success: false, message: "Failed to register staff", error: error.message });
+    console.error("Register error:", error);
+
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      let message = "Duplicate field error";
+      if (field === "username") message = "Username already taken";
+      if (field === "userID") message = "UserID already taken";
+      
+      return res.status(400).json({ 
+        success: false,
+        message 
+      });
+    }
+
+    // Handle validation errors (e.g., password format)
+    if (error.name === "ValidationError") {
+      const message = Object.values(error.errors)[0].message;
+      return res.status(400).json({ success: false, message });
+    }
+
+    // Handle other errors
+    return res.status(500).json({ 
+      success: false,
+      message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+    });
   }
 };
 
