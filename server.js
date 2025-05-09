@@ -10,6 +10,7 @@ import staffRoutes from "./routes/staffRoutes.js";
 import hostRoutes from "./routes/hostRoutes.js";
 import verifyVisitorRoutes from "./routes/VerifyVisitorRoutes.js";
 import appointmentRoutes from './routes/appoiment.routes.js';
+import feedbackRoutes from './routes/feedbackRoutes.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -73,6 +74,16 @@ app.use("/api/staff", staffRoutes);
 app.use("/api/verify-visitors", verifyVisitorRoutes);
 app.use("/api/host", hostRoutes);
 app.use('/api/appointment',appointmentRoutes);
+app.use('/api/feedback', feedbackRoutes);
+
+// Log feedback routes
+feedbackRoutes.stack.forEach((r) => {
+  if (r.route && r.route.path) {
+    console.log(
+      `Route registered: /api/feedback${r.route.path} [${Object.keys(r.route.methods).join(', ').toUpperCase()}]`
+    );
+  }
+});
 
 // Error handling middleware
 app.use(errorHandler);
