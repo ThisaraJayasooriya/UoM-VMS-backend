@@ -1,23 +1,26 @@
 import Appointment from "../models/Appoinment.js";
+import Staff from '../models/Staff.js';
 
 export const makeAppoinment = async (req, res) => {
     console.log("Received request to create appointment:", req.body);
   try {
     const {
-      firstName,
-      lastName,
+      visitorId,
+      firstname,
+      lastname,
       contact,
-      host,
+      hostId,
       vehicle,
       category,
       reason,
     } = req.body;
 
     const appoinment = new Appointment({
-      firstName,
-      lastName,
+      visitorId,
+      firstname,
+      lastname,
       contact,
-      host,
+      hostId,
       vehicle,
       category,
       reason,
@@ -52,5 +55,15 @@ export const deleteAppoinment = async (req, res) => {
   } catch (error) {
     console.error("Error deleting appoinment:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+export const getAllHosts = async (req, res) => {
+  try {
+    const hosts = await Staff.find({ role: 'host' }).select('name _id');
+    res.status(200).json(hosts);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching hosts', error });
   }
 };
