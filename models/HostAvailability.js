@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const HostAvailabilitySchema = new mongoose.Schema({
-    hostId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    hostId: { type: mongoose.Schema.Types.ObjectId, ref: "Staff", required: true },
     date: { type: String, required: true }, // Format: YYYY-MM-DD
     startTime: { type: String, required: true }, // Format: HH:mm
     endTime: { type: String, required: true }, // Format: HH:mm
