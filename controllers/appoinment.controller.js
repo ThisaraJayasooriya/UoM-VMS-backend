@@ -1,9 +1,12 @@
 import Appointment from "../models/Appoinment.js";
 import Staff from '../models/Staff.js';
+import { getNextSequence } from "../utils/getNextSequence.js";
 
 export const makeAppoinment = async (req, res) => {
     console.log("Received request to create appointment:", req.body);
   try {
+    const nextNumber = await getNextSequence("appointment");
+    const customId = `APT-${String(nextNumber).padStart(4, "0")}`;
     const {
       visitorId,
       firstname,
@@ -16,6 +19,7 @@ export const makeAppoinment = async (req, res) => {
     } = req.body;
 
     const appoinment = new Appointment({
+      appointmentId: customId, // your custom field
       visitorId,
       firstname,
       lastname,

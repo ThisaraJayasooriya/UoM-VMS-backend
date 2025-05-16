@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const appointmentSchema = new mongoose.Schema({
+  appointmentId: { type: String, unique: true },
   visitorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Visitorsignup",
@@ -23,12 +24,10 @@ const appointmentSchema = new mongoose.Schema({
     default: "pending",
   },
   response: {
-    respondedAt: Date,
-    responseMessage: String,
-    timeSlot: {
-      startTime: Date,
-      endTime: Date,
-    },
+    date: String,
+    startTime: String,
+    endTime: String,
+    responseType: String, // "allSlots" or "exactSlot"
   },
 });
 
