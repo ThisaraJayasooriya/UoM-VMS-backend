@@ -12,6 +12,7 @@ import verifyVisitorRoutes from "./routes/VerifyVisitorRoutes.js";
 import appointmentRoutes from './routes/appoiment.routes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import hostAppointmentsRoutes from './routes/hostAppointmentsRoutes.js';
+import  userProfileRoutes  from "./routes/userProfileRoutes.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -77,6 +78,8 @@ app.use("/api/host", hostRoutes);
 app.use('/api/appointment',appointmentRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/appointments', hostAppointmentsRoutes);
+app.use('/api/userProfile', userProfileRoutes);
+
 
 // Log feedback routes
 feedbackRoutes.stack.forEach((r) => {
