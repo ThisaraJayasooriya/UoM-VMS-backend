@@ -63,7 +63,7 @@ export const registerStaff = async (req, res) => {
     const loginUrl = `${baseUrl}/login`;
     console.log("Generated loginUrl:", loginUrl);
 
-    // Send confirmation email without including the password
+    // Send confirmation email with the plain password
     const emailResult = await sendEmail({
       to: newStaff.email,
       subject: "Welcome to UoM Visitor Management System",
@@ -77,8 +77,9 @@ export const registerStaff = async (req, res) => {
             <li><strong>Username:</strong> ${newStaff.username}</li>
             <li><strong>Role:</strong> ${newStaff.role.charAt(0).toUpperCase() + newStaff.role.slice(1)}</li>
             <li><strong>Email:</strong> ${newStaff.email}</li>
+            <li><strong>Password:</strong> ${password.trim()}</li>
           </ul>
-          <p>Please use your username and the password you set to log in to the system.</p>
+          <p>Please use your username and the password above to log in to the system. For security, we recommend changing your password after your first login.</p>
           <p style="margin-top: 20px;">
             <a href="${loginUrl}" style="background-color: #124E66; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Log In Now</a>
           </p>

@@ -13,6 +13,8 @@ import appointmentRoutes from './routes/appoiment.routes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import hostAppointmentsRoutes from './routes/hostAppointmentsRoutes.js';
 import  userProfileRoutes  from "./routes/userProfileRoutes.js";
+import visitorRoutes from './routes/visitorRoutes.js'; // Import new route
+
 
 // Load environment variables from .env file
 dotenv.config();
@@ -58,7 +60,7 @@ app.get("/", (req, res) => {
   res.send("🚀 Welcome to the VMS Backend API");
 });
 
-// ✅ Auth routes mounted at /api/auth/visitor
+// Auth routes mounted at /api/auth/visitor
 app.use("/api/auth/visitor", authLimiter, visitorAuthRoutes);
 console.log("✅ Mounted visitor auth routes at /api/auth/visitor");
 
@@ -75,10 +77,12 @@ visitorAuthRoutes.stack.forEach((r) => {
 app.use("/api/staff", staffRoutes);
 app.use("/api/verify-visitors", verifyVisitorRoutes);
 app.use("/api/host", hostRoutes);
-app.use('/api/appointment',appointmentRoutes);
+app.use('/api/appointment', appointmentRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/appointments', hostAppointmentsRoutes);
 app.use('/api/userProfile', userProfileRoutes);
+app.use('/api/visitor', visitorRoutes); // Mount new visitor routes
+
 
 
 // Log feedback routes
