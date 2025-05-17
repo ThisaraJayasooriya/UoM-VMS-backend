@@ -15,31 +15,36 @@ export const getPendingAppointments = async (req, res) => {
   }
 };
 
-// Update appointment status
+// Update appointment status and optionally customize ID format
 export const updateAppointmentStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, date, startTime, endTime, responseType } = req.body;
 
-    const updated = await Appointment.findByIdAndUpdate(
-      id,
-      {
-        status,
-        response: {
-          date,
-          startTime,
-          endTime,
-          responseType,
-        },
-      },
-      { new: true }
-    );
-
-    if (!updated) {
+    // Find the appointment first
+    const appointment = await Appointment.findById(id);
+    if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
-    res.status(200).json(updated);
+    // Update basic fields
+    appointment.status = status;
+    appointment.response = {
+      date,
+      startTime,
+      endTime,
+      responseType,
+    };
+
+    // If accepted, change the customId format
+    if (status === "accepted" && appointment.appointmentId?.startsWith("M-")) {
+      const number = appointment.appointmentId.split("-")[1]; // e.g., 0001
+      appointment.appointmentId = `A-${number}`; // Change to M0001
+    }
+
+    await appointment.save();
+
+    res.status(200).json(appointment);
   } catch (error) {
     console.error("Error updating appointment:", error);
     res.status(500).json({ message: "Server error" });

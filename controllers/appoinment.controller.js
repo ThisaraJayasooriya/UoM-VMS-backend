@@ -6,7 +6,7 @@ export const makeAppoinment = async (req, res) => {
     console.log("Received request to create appointment:", req.body);
   try {
     const nextNumber = await getNextSequence("appointment");
-    const customId = `APT-${String(nextNumber).padStart(4, "0")}`;
+    const customId = `M-${String(nextNumber).padStart(4, "0")}`;
     const {
       visitorId,
       firstname,
