@@ -1,9 +1,9 @@
 import Appointment from "../models/Appoinment.js";
-import Staff from '../models/Staff.js';
+import Staff from "../models/Staff.js";
 import { getNextSequence } from "../utils/getNextSequence.js";
 
 export const makeAppoinment = async (req, res) => {
-    console.log("Received request to create appointment:", req.body);
+  console.log("Received request to create appointment:", req.body);
   try {
     const nextNumber = await getNextSequence("appointment");
     const customId = `M-${String(nextNumber).padStart(4, "0")}`;
@@ -31,7 +31,9 @@ export const makeAppoinment = async (req, res) => {
     });
 
     await appoinment.save();
-    res.status(201).json({ message: "Appoinment created successfully", appoinment });
+    res
+      .status(201)
+      .json({ message: "Appoinment created successfully", appoinment });
   } catch (error) {
     console.error("Error creating appoinment:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -62,12 +64,31 @@ export const deleteAppoinment = async (req, res) => {
   }
 };
 
-
 export const getAllHosts = async (req, res) => {
   try {
-    const hosts = await Staff.find({ role: 'host' }).select('name _id');
+    const hosts = await Staff.find({ role: "host" }).select("name _id");
     res.status(200).json(hosts);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching hosts', error });
+    res.status(500).json({ message: "Error fetching hosts", error });
+  }
+};
+
+// GET accepted appointment for a visitor
+export const getAcceptedAppointment = async (req, res) => {
+  try {
+    const { visitorId } = req.params;
+
+    const appointment = await Appointment.findOne({
+      visitorId,
+      status: "accepted",
+    }).populate("hostId", "firstname lastname");
+
+    if (!appointment) {
+      return res.status(404).json({ message: "No accepted appointment found" });
+    }
+
+    res.status(200).json(appointment);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
   }
 };
