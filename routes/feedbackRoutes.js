@@ -32,4 +32,29 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+// GET /api/feedback - Retrieve all feedback entries
+router.get('/', async (req, res, next) => {
+  try {
+    const feedbackEntries = await Feedback.find().sort({ createdAt: -1 });
+    res.status(200).json(feedbackEntries);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/feedback/:id - Delete a feedback entry
+router.delete('/:id', async (req, res, next) => {
+  try {
+    console.log(`Received DELETE request for ID: ${req.params.id}`);
+    const feedback = await Feedback.findByIdAndDelete(req.params.id);
+    if (!feedback) {
+      return res.status(404).json({ message: 'Feedback not found' });
+    }
+    res.status(200).json({ message: 'Feedback deleted successfully' });
+  } catch (error) {
+    console.error(`DELETE error for ID ${req.params.id}:`, error);
+    next(error);
+  }
+});
+
 export default router;
