@@ -103,3 +103,7 @@ app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🔗 Base URL: http://localhost:${PORT}`);
 });
+
+// security Dashboard cards
+import securityRoutes from './routes/securityRoutes.js';
+app.use('/api/security', securityRoutes);
