@@ -1,94 +1,148 @@
-import Appointment from "../models/Appoinment.js";
-import Staff from "../models/Staff.js";
-import { getNextSequence } from "../utils/getNextSequence.js";
+  import Appointment from "../models/Appoinment.js";
+  import Staff from "../models/Staff.js";
+  import { getNextSequence } from "../utils/getNextSequence.js";
 
-export const makeAppoinment = async (req, res) => {
-  console.log("Received request to create appointment:", req.body);
-  try {
-    const nextNumber = await getNextSequence("appointment");
-    const customId = `M-${String(nextNumber).padStart(4, "0")}`;
-    const {
-      visitorId,
-      firstname,
-      lastname,
-      contact,
-      hostId,
-      vehicle,
-      category,
-      reason,
-    } = req.body;
+  // Create appointment
+  export const makeAppoinment = async (req, res) => {
+    console.log("Received request to create appointment:", req.body);
+    try {
+      const nextNumber = await getNextSequence("appointment");
+      const customId = `M-${String(nextNumber).padStart(4, "0")}`;
+      const {
+        visitorId,
+        firstname,
+        lastname,
+        contact,
+        hostId,
+        vehicle,
+        category,
+        reason,
+      } = req.body;
 
-    const appoinment = new Appointment({
-      appointmentId: customId, // your custom field
-      visitorId,
-      firstname,
-      lastname,
-      contact,
-      hostId,
-      vehicle,
-      category,
-      reason,
-    });
+      const appoinment = new Appointment({
+        appointmentId: customId,
+        visitorId,
+        firstname,
+        lastname,
+        contact,
+        hostId,
+        vehicle,
+        category,
+        reason,
+      });
 
-    await appoinment.save();
-    res
-      .status(201)
-      .json({ message: "Appoinment created successfully", appoinment });
-  } catch (error) {
-    console.error("Error creating appoinment:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const getAppoinments = async (req, res) => {
-  try {
-    const appoinments = await Appointment.find();
-    res.status(200).json(appoinments);
-  } catch (error) {
-    console.error("Error fetching appoinments:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const deleteAppoinment = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deletedAppoinment = await Appointment.findByIdAndDelete(id);
-    if (!deletedAppoinment) {
-      return res.status(404).json({ message: "Appoinment not found" });
+      await appoinment.save();
+      res
+        .status(201)
+        .json({ message: "Appoinment created successfully", appoinment });
+    } catch (error) {
+      console.error("Error creating appoinment:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-    res.status(200).json({ message: "Appoinment deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting appoinment:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
+  };
 
-export const getAllHosts = async (req, res) => {
+  // Get all appointments
+  export const getAppoinments = async (req, res) => {
+    try {
+      const appoinments = await Appointment.find();
+      res.status(200).json(appoinments);
+    } catch (error) {
+      console.error("Error fetching appoinments:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  };
+
+  // Delete appointment
+  export const deleteAppoinment = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deletedAppoinment = await Appointment.findByIdAndDelete(id);
+      if (!deletedAppoinment) {
+        return res.status(404).json({ message: "Appoinment not found" });
+      }
+      res.status(200).json({ message: "Appoinment deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting appoinment:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  };
+
+  // Get all hosts
+  export const getAllHosts = async (req, res) => {
+    try {
+      const hosts = await Staff.find({ role: "host" }).select("name _id");
+      res.status(200).json(hosts);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching hosts", error });
+    }
+  };
+
+  // Get accepted appointment for a visitor
+  export const getAcceptedAppointment = async (req, res) => {
+    try {
+      const { visitorId } = req.params;
+
+      const appointment = await Appointment.findOne({
+        visitorId,
+        status: "accepted",
+      }).populate("hostId", "firstname lastname");
+
+      if (!appointment) {
+        return res.status(404).json({ message: "No accepted appointment found" });
+      }
+
+      res.status(200).json(appointment);
+    } catch (error) {
+      res.status(500).json({ message: "Server error", error });
+    }
+  };
+
+  // ✅ Confirm appointment
+  export const confirmAppointment = async (req, res) => {
+    try {
+      const { appointmentId } = req.params;
+      console.log("Received request to confirm appointment with ID:", appointmentId);
+      const appointment = await Appointment.findById(appointmentId);
+      if (!appointment) {
+        return res.status(404).json({ message: "Appointment not found" });
+      }
+
+      if (appointment.status !== "accepted") {
+        return res.status(400).json({ message: "Only accepted appointments can be confirmed" });
+      }
+
+      appointment.status = "confirmed";
+      await appointment.save();
+
+      res.status(200).json({ message: "Appointment confirmed successfully", appointment });
+    } catch (error) {
+      console.error("Error confirming appointment:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  };
+  
+// Visitor reject appointment
+export const visitorRejectAppointment = async (req, res) => {
   try {
-    const hosts = await Staff.find({ role: "host" }).select("name _id");
-    res.status(200).json(hosts);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching hosts", error });
-  }
-};
+    const { appointmentId } = req.params;
+    console.log("Received request to reject appointment by visitor:", appointmentId);
 
-// GET accepted appointment for a visitor
-export const getAcceptedAppointment = async (req, res) => {
-  try {
-    const { visitorId } = req.params;
-
-    const appointment = await Appointment.findOne({
-      visitorId,
-      status: "accepted",
-    }).populate("hostId", "firstname lastname");
+    const appointment = await Appointment.findById(appointmentId);
 
     if (!appointment) {
-      return res.status(404).json({ message: "No accepted appointment found" });
+      return res.status(404).json({ message: "Appointment not found" });
     }
 
-    res.status(200).json(appointment);
+    if (appointment.status !== "accepted") {
+      return res.status(400).json({ message: "Only accepted appointments can be rejected by visitor" });
+    }
+
+    appointment.status = "visitorRejected";
+    await appointment.save();
+
+    res.status(200).json({ message: "Appointment rejected by visitor", appointment });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error });
+    console.error("Error rejecting appointment:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
