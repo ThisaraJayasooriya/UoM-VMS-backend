@@ -50,3 +50,18 @@ export const updateAppointmentStatus = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const getConfirmedAppointments = async (req, res) => {
+  const hostId = req.params.hostId;
+
+  try {
+    const appointments = await Appointment.find({
+      hostId,
+      status: "confirmed"
+    });
+
+    res.status(200).json(appointments);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching appointments", error });
+  }
+};
