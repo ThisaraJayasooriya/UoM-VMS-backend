@@ -22,7 +22,7 @@ export const registerStaff = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid email format" });
     }
 
-    // Check for duplicates (removed nicNumber check)
+    // Check for duplicates(username and userID)
     const [usernameExists, userIDExists] = await Promise.all([
       Staff.findOne({ username: { $regex: new RegExp(`^${username.trim()}$`, "i") } }),
       Staff.findOne({ userID: { $regex: new RegExp(`^${userID.trim()}$`, "i") } }),
@@ -43,7 +43,7 @@ export const registerStaff = async (req, res) => {
       username: username.trim(),
       email: email.trim(),
       phone: phone?.trim() || "",
-      password: password.trim(), // Pass plain password; model will hash it
+      password: password.trim(), 
       role: safeRole.toLowerCase(),
       userID: userID.trim(),
       faculty: faculty?.trim() || "",
@@ -58,12 +58,12 @@ export const registerStaff = async (req, res) => {
     // Debug log to check FRONTEND_URL
     console.log("FRONTEND_URL in StaffController:", process.env.FRONTEND_URL || "Not defined, using fallback");
 
-    // Use FRONTEND_URL instead of CLIENT_URL
+    // Use FRONTEND_URL 
     const baseUrl = process.env.FRONTEND_URL && process.env.FRONTEND_URL !== "undefined" ? process.env.FRONTEND_URL : 'http://localhost:5173';
     const loginUrl = `${baseUrl}/login`;
     console.log("Generated loginUrl:", loginUrl);
 
-    // Send confirmation email with the plain password
+    // Send confirmation email 
     const emailResult = await sendEmail({
       to: newStaff.email,
       subject: "Welcome to UoM Visitor Management System",
