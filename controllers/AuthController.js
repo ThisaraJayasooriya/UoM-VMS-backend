@@ -141,7 +141,7 @@ export const forgotPassword = async (req, res) => {
   const { contact } = req.body;
 
   if (!contact?.trim()) {
-    return errorResponse(res, 400, "Email or phone number is required");
+    return errorResponse(res, 400, "Email address is required");
   }
 
   try {
@@ -270,6 +270,7 @@ export const resetPassword = async (req, res) => {
       if (user) {
         const salt = await bcrypt.genSalt(10); // Hash staff passwords as well
         user.password = await bcrypt.hash(newPassword, salt);
+        user.skipPasswordHash = true; // Bypass pre-save hook
       }
     }
 
