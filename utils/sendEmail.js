@@ -19,7 +19,7 @@ console.log("Email configuration check in sendEmail.js:", {
   EMAIL_PASS: process.env.EMAIL_PASS ? "[REDACTED]" : undefined,
   CLIENT_URL: process.env.CLIENT_URL,
 });
-
+// Ensure EMAIL_USER and EMAIL_PASS are defined
 const sendEmail = async ({ to, subject, html }) => {
   try {
     const mailOptions = {

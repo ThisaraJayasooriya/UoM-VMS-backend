@@ -4,12 +4,12 @@ import sendEmail from "../utils/sendEmail.js";
 // POST: Register staff
 export const registerStaff = async (req, res) => {
   try {
-    const { name, username, email, phone, password, role, userID, faculty, department, nicNumber } = req.body;
+    const { name, username, email, phone, password, role, userID, faculty, department, nicNumber } = req.body;//Extracts data sent from the frontend
 
     console.log("Received registration data:", { name, username, email, phone, role, userID, faculty, department, nicNumber });
 
     // Validate required fields with default for role
-    const safeRole = role?.trim() || "security"; // Default to "security" if undefined
+    const safeRole = role?.trim() || "security"; 
     if (!name?.trim() || !username?.trim() || !email?.trim() || !password?.trim() || !userID?.trim()) {
       console.error("Missing required fields:", { name, username, email, password, userID });
       return res.status(400).json({ success: false, message: "Name, username, email, password, and userID are required" });
@@ -37,7 +37,7 @@ export const registerStaff = async (req, res) => {
       return res.status(400).json({ success: false, message: "UserID already taken" });
     }
 
-    // Create new staff; password hashing and validation handled by the model
+    // Create new staff record in the db; password hashing and validation handled by the model
     const newStaff = await Staff.create({
       name: name.trim(),
       username: username.trim(),
@@ -55,9 +55,7 @@ export const registerStaff = async (req, res) => {
 
     console.log("Staff saved successfully:", newStaff.userID);
 
-    // Debug log to check FRONTEND_URL
     console.log("FRONTEND_URL in StaffController:", process.env.FRONTEND_URL || "Not defined, using fallback");
-
     // Use FRONTEND_URL 
     const baseUrl = process.env.FRONTEND_URL && process.env.FRONTEND_URL !== "undefined" ? process.env.FRONTEND_URL : 'http://localhost:5173';
     const loginUrl = `${baseUrl}/login`;
@@ -101,7 +99,7 @@ export const registerStaff = async (req, res) => {
       });
     }
 
-    return res.status(201).json({
+    return res.status(201).json({ 
       success: true,
       message: "Staff registered successfully",
       data: {

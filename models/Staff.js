@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+import bcrypt from "bcrypt";// Import bcrypt for password hashing
 
 const staffSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
