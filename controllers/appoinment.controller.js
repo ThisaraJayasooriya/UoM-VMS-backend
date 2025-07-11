@@ -146,3 +146,43 @@ export const visitorRejectAppointment = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const getAppointmentStatus = async (req, res) => {
+  try {
+    const visitorId = req.params.visitorId;
+    const appointments = await Appointment.find({
+      visitorId: visitorId,
+      status: { $in: ["confirmed", "accepted", "visitorRejected", "pending", "rejected"] }
+    }).populate("hostId", "name email faculty department");
+    
+    // Format the response to include more readable host information
+    const formattedAppointments = appointments.map(appointment => {
+      const formattedAppointment = appointment.toObject();
+      
+      // Add host name as a separate property if hostId exists
+      if (formattedAppointment.hostId) {
+        formattedAppointment.hostName = formattedAppointment.hostId.name || "Unknown Host";
+        formattedAppointment.hostEmail = formattedAppointment.hostId.email;
+        formattedAppointment.hostFaculty = formattedAppointment.hostId.faculty;
+        formattedAppointment.hostDepartment = formattedAppointment.hostId.department;
+      }
+      
+      // Add appointment time slot information in a more accessible format
+      if (formattedAppointment.response) {
+        formattedAppointment.appointmentDate = formattedAppointment.response.date || "";
+        formattedAppointment.startTime = formattedAppointment.response.startTime || "";
+        formattedAppointment.endTime = formattedAppointment.response.endTime || "";
+      }
+      
+      return formattedAppointment;
+    });
+    
+    res.status(200).json(formattedAppointments);
+  } catch (error) {
+    console.error("Error fetching appointments:", error);
+    res.status(500).json({ message: "Error fetching appointments", error });
+  }
+};
+
+
+
