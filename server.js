@@ -12,15 +12,17 @@ import verifyVisitorRoutes from "./routes/VerifyVisitorRoutes.js";
 import appointmentRoutes from './routes/appoiment.routes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import hostAppointmentsRoutes from './routes/hostAppointmentsRoutes.js';
-import  userProfileRoutes  from "./routes/userProfileRoutes.js";
+import userProfileRoutes from "./routes/userProfileRoutes.js";
 import visitorRoutes from './routes/visitorRoutes.js'; 
 import userRoutes from './routes/userRoutes.js';
-
+import securityRoutes from './routes/securityRoutes.js'; // Moved here
 
 // Load environment variables from .env file
 dotenv.config();
 
+// Log environment variables for debugging
 console.log("Loaded environment variables:", {
+  MONGO_URI: process.env.MONGO_URI ? "[REDACTED]" : undefined, // Added debug
   EMAIL_USER: process.env.EMAIL_USER,
   EMAIL_PASS: process.env.EMAIL_PASS ? "[REDACTED]" : undefined,
   CLIENT_URL: process.env.CLIENT_URL
@@ -84,7 +86,7 @@ app.use('/api/appointments', hostAppointmentsRoutes);
 app.use('/api/userProfile', userProfileRoutes);
 app.use('/api/visitor', visitorRoutes); 
 app.use('/api/users', userRoutes);
-
+app.use('/api/security', securityRoutes); // Moved here
 
 // Log feedback routes
 feedbackRoutes.stack.forEach((r) => {
@@ -105,6 +107,5 @@ app.listen(PORT, () => {
   console.log(`🔗 Base URL: http://localhost:${PORT}`);
 });
 
-// security Dashboard cards
-import securityRoutes from './routes/securityRoutes.js';
-app.use('/api/security', securityRoutes);
+// Placeholder for future middleware or routes (optional)
+console.log("Server setup complete.");
