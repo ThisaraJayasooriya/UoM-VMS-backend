@@ -1,9 +1,17 @@
 import mongoose from "mongoose";
 
 const verifyVisitorSchema = new mongoose.Schema({
-  visitorId: { type: String, required: true, unique: true },
+  appointmentId: {
+    type: String, 
+    required: true
+  },
+  visitorId: {
+    type: String,
+    required: true,
+    
+  },
   name: { type: String, required: true },
-  nic: { type: String, required: true, unique: true },
+  nic: { type: String, required: true },
   vehicleNumber: { type: String },
   host: { type: String, required: true },
   purpose: { type: String },

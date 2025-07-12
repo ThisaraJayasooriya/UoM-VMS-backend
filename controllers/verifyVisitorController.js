@@ -8,7 +8,7 @@ export const searchVisitor = async (req, res) => {
   try {
     const visitor = await VerifyVisitor.findOne({
       $or: [
-        { visitorId: { $regex: term, $options: "i" } }, 
+        { appointmentId: { $regex: term, $options: "i" } }, 
         { nic: { $regex: term, $options: "i" } },
       ],
     });
@@ -25,10 +25,10 @@ export const searchVisitor = async (req, res) => {
 
 // Check-in visitor
 export const checkInVisitor = async (req, res) => {
-  const { visitorId } = req.params; 
+  const { appointmentId } = req.params; 
 
   try {
-    const visitor = await VerifyVisitor.findOne({ visitorId }); 
+    const visitor = await VerifyVisitor.findOne({ appointmentId });
 
     if (!visitor) {
       return res.status(404).json({ message: "Visitor not found" });
@@ -66,10 +66,10 @@ export const checkInVisitor = async (req, res) => {
 
 // Check-out visitor
 export const checkOutVisitor = async (req, res) => {
-  const { visitorId } = req.params; 
+  const { appointmentId } = req.params; 
 
   try {
-    const visitor = await VerifyVisitor.findOne({ visitorId }); 
+    const visitor = await VerifyVisitor.findOne({ appointmentId });
 
     if (!visitor) {
       return res.status(404).json({ message: "Visitor not found" });
