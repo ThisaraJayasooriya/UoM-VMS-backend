@@ -54,20 +54,22 @@ export const getAppoinments = async (req, res) => {
   }
 };
 
-// Delete appointment
-export const deleteAppoinment = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deletedAppoinment = await Appointment.findByIdAndDelete(id);
-    if (!deletedAppoinment) {
-      return res.status(404).json({ message: "Appoinment not found" });
+
+  // Delete appointment
+  export const deleteAppoinment = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const deletedAppoinment = await Appointment.findByIdAndDelete(id);
+      if (!deletedAppoinment) {
+        return res.status(404).json({ message: "Appoinment not found" });
+      }
+      res.status(200).json({ message: "Appoinment deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting appoinment:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-    res.status(200).json({ message: "Appoinment deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting appoinment:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
+  };
+
 
 // Get all hosts
 export const getAllHosts = async (req, res) => {
@@ -162,10 +164,7 @@ export const confirmAppointment = async (req, res) => {
 export const visitorRejectAppointment = async (req, res) => {
   try {
     const { appointmentId } = req.params;
-    console.log(
-      "Received request to reject appointment by visitor:",
-      appointmentId
-    );
+    console.log("Received request to reject appointment by visitor:", appointmentId);
 
     const appointment = await Appointment.findById(appointmentId);
 
@@ -174,20 +173,56 @@ export const visitorRejectAppointment = async (req, res) => {
     }
 
     if (appointment.status !== "accepted") {
-      return res
-        .status(400)
-        .json({
-          message: "Only accepted appointments can be rejected by visitor",
-        });
+      return res.status(400).json({ message: "Only accepted appointments can be rejected by visitor" });
     }
 
     appointment.status = "visitorRejected";
     await appointment.save();
 
-    res
-      .status(200)
-      .json({ message: "Appointment rejected by visitor", appointment });
+    res.status(200).json({ message: "Appointment rejected by visitor", appointment });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching hosts', error });
+    console.error("Error rejecting appointment:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const getAppointmentStatus = async (req, res) => {
+  try {
+    const visitorId = req.params.visitorId;
+    const appointments = await Appointment.find({
+      visitorId: visitorId,
+      status: { $in: ["confirmed", "accepted", "visitorRejected", "pending", "rejected"] }
+    }).populate("hostId", "name email faculty department");
+    
+    // Format the response to include more readable host information
+    const formattedAppointments = appointments.map(appointment => {
+      const formattedAppointment = appointment.toObject();
+      
+      // Add host name as a separate property if hostId exists
+      if (formattedAppointment.hostId) {
+        formattedAppointment.hostName = formattedAppointment.hostId.name || "Unknown Host";
+        formattedAppointment.hostEmail = formattedAppointment.hostId.email;
+        formattedAppointment.hostFaculty = formattedAppointment.hostId.faculty;
+        formattedAppointment.hostDepartment = formattedAppointment.hostId.department;
+      }
+      
+      // Add appointment time slot information in a more accessible format
+      if (formattedAppointment.response) {
+        formattedAppointment.appointmentDate = formattedAppointment.response.date || "";
+        formattedAppointment.startTime = formattedAppointment.response.startTime || "";
+        formattedAppointment.endTime = formattedAppointment.response.endTime || "";
+      }
+      
+      return formattedAppointment;
+    });
+    
+    res.status(200).json(formattedAppointments);
+  } catch (error) {
+    console.error("Error fetching appointments:", error);
+    res.status(500).json({ message: "Error fetching appointments", error });
+
+  }
+};
+
+
+

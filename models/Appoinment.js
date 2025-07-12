@@ -1,35 +1,36 @@
-import mongoose from "mongoose";
+  import mongoose from "mongoose";
 
-const appointmentSchema = new mongoose.Schema({
-  appointmentId: { type: String, unique: true },
-  visitorId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Visitorsignup",
-    required: true,
-  },
+  const appointmentSchema = new mongoose.Schema({
+    appointmentId: { type: String, unique: true },
+    visitorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Visitorsignup",
+      required: true,
+    },
 
-  hostId: { type: mongoose.Schema.Types.ObjectId, ref: "Staff", required: true },
+    hostId: { type: mongoose.Schema.Types.ObjectId, ref: "Staff", required: true },
 
-  
-  vehicle: { type: String},
-  firstname: { type: String, required: true },
-  lastname: { type: String, required: true },
-  contact: { type: String, required: true },
-  category: { type: String, required: true },
-  reason: { type: String, required: true },
-  requestedAt: { type: Date, default: Date.now },
-  status: {
-    type: String,
-    enum: ["pending", "accepted", "rejected"],
-    default: "pending",
-  },
-  response: {
-    date: String,
-    startTime: String,
-    endTime: String,
-    responseType: String, // "allSlots" or "exactSlot"
-  },
-});
+    
+    vehicle: { type: String},
+    firstname: { type: String, required: true },
+    lastname: { type: String, required: true },
+    contact: { type: String, required: true },
+    category: { type: String, required: true },
+    reason: { type: String, required: true },
+    requestedAt: { type: Date, default: Date.now },
+    status: {
+      type: String,
+      enum: ["pending", "accepted", "rejected" , "confirmed", "visitorRejected"],
+      default: "pending",
+    },
+    response: {
+      date: String,
+      startTime: String,
+      endTime: String,
+      responseType: String, // "allSlots" or "exactSlot"
+    },
+  });
 
-const Appointment = mongoose.model("Appointment", appointmentSchema);
-export default Appointment;
+  const Appointment = mongoose.model("Appointment", appointmentSchema);
+  export default Appointment;
+    

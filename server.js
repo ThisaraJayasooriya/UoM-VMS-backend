@@ -14,6 +14,7 @@ import feedbackRoutes from './routes/feedbackRoutes.js';
 import hostAppointmentsRoutes from './routes/hostAppointmentsRoutes.js';
 import  userProfileRoutes  from "./routes/userProfileRoutes.js";
 import visitorRoutes from './routes/visitorRoutes.js'; // Import new route
+import userRoutes from './routes/userRoutes.js';
 
 
 // Load environment variables from .env file
@@ -82,7 +83,7 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/appointments', hostAppointmentsRoutes);
 app.use('/api/userProfile', userProfileRoutes);
 app.use('/api/visitor', visitorRoutes); // Mount new visitor routes
-
+app.use('/api/users', userRoutes);
 
 
 // Log feedback routes
