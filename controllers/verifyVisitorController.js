@@ -1,5 +1,6 @@
 import VerifyVisitor from "../models/VerifyVisitor.js";
 import Activity from "../models/Activity.js";
+import Appointment from "../models/Appoinment.js";
 
 // Search visitor by visitorId or NIC
 export const searchVisitor = async (req, res) => {
@@ -45,6 +46,13 @@ export const checkInVisitor = async (req, res) => {
     visitor.checkInTime = new Date();
     visitor.status = "Checked-In";
     await visitor.save();
+    
+    // Update appointment status to "completed"
+    await Appointment.findOneAndUpdate(
+      { appointmentId },
+      { status: "completed" }
+    );
+
 
     // Log activity
     const activity = new Activity({

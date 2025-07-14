@@ -20,7 +20,7 @@
     requestedAt: { type: Date, default: Date.now },
     status: {
       type: String,
-      enum: ["pending", "accepted", "rejected" , "confirmed", "visitorRejected"],
+      enum: ["pending", "accepted", "rejected" , "confirmed", "visitorRejected", "completed", "incompleted"],
       default: "pending",
     },
     response: {
