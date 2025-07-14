@@ -224,5 +224,69 @@ export const getAppointmentStatus = async (req, res) => {
   }
 };
 
+// Get visit history (completed appointments) for a visitor
+export const visitHistory = async (req, res) => {
+  try {
+    const { visitorId } = req.params;
+    
+    // Find appointments with "completed" status for the given visitorId
+    const completedAppointments = await Appointment.find({
+      visitorId: visitorId,
+      status: "completed"
+    })
+    .populate("hostId", "name email faculty department")
+    .sort({ updatedAt: -1 }); // Sort by most recent first
+    
+    // Format the response to include more readable host information
+    const formattedHistory = completedAppointments.map(appointment => {
+      const formattedAppointment = appointment.toObject();
+      
+      // Add host name as a separate property if hostId exists
+      if (formattedAppointment.hostId) {
+        formattedAppointment.hostName = formattedAppointment.hostId.name || "Unknown Host";
+        formattedAppointment.hostEmail = formattedAppointment.hostId.email;
+        formattedAppointment.hostFaculty = formattedAppointment.hostId.faculty;
+        formattedAppointment.hostDepartment = formattedAppointment.hostId.department;
+      }
+      
+      // Add appointment time slot information in a more accessible format
+      if (formattedAppointment.response) {
+        formattedAppointment.appointmentDate = formattedAppointment.response.date || "";
+        formattedAppointment.startTime = formattedAppointment.response.startTime || "";
+        formattedAppointment.endTime = formattedAppointment.response.endTime || "";
+      }
+      
+      // Add check-in and check-out times if available
+      if (formattedAppointment.checkInTime) {
+        formattedAppointment.formattedCheckInTime = new Date(formattedAppointment.checkInTime).toLocaleString();
+      }
+      
+      if (formattedAppointment.checkOutTime) {
+        formattedAppointment.formattedCheckOutTime = new Date(formattedAppointment.checkOutTime).toLocaleString();
+      }
+      
+      // Calculate visit duration if both check-in and check-out times exist
+      if (formattedAppointment.checkInTime && formattedAppointment.checkOutTime) {
+        const checkIn = new Date(formattedAppointment.checkInTime);
+        const checkOut = new Date(formattedAppointment.checkOutTime);
+        const durationMs = checkOut - checkIn;
+        
+        // Convert to hours and minutes
+        const hours = Math.floor(durationMs / (1000 * 60 * 60));
+        const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+        
+        formattedAppointment.visitDuration = `${hours}h ${minutes}m`;
+      }
+      
+      return formattedAppointment;
+    });
+    
+    res.status(200).json(formattedHistory);
+  } catch (error) {
+    console.error("Error fetching visit history:", error);
+    res.status(500).json({ message: "Error fetching visit history", error });
+  }
+};
+
 
 
