@@ -11,6 +11,7 @@ import hostRoutes from "./routes/hostRoutes.js";
 import verifyVisitorRoutes from "./routes/VerifyVisitorRoutes.js";
 import appointmentRoutes from './routes/appoiment.routes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
+import visitorLogbookRoutes from './routes/visitorLogbookRoutes.js';
 import hostAppointmentsRoutes from './routes/hostAppointmentsRoutes.js';
 import userProfileRoutes from "./routes/userProfileRoutes.js";
 import visitorRoutes from './routes/visitorRoutes.js'; 
@@ -46,7 +47,7 @@ app.use(cookieParser());
 // CORS configuration
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+     origin: ['http://localhost:5173', 'http://localhost:5174'],
     credentials: true,
   })
 );
@@ -82,6 +83,7 @@ app.use("/api/verify-visitors", verifyVisitorRoutes);
 app.use("/api/host", hostRoutes);
 app.use('/api/appointment', appointmentRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/logbook', visitorLogbookRoutes);
 app.use('/api/appointments', hostAppointmentsRoutes);
 app.use('/api/userProfile', userProfileRoutes);
 app.use('/api/visitor', visitorRoutes); 
