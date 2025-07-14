@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bcrypt from "bcrypt";// Import bcrypt for password hashing
+import bcrypt from "bcrypt"; // Import bcrypt for password hashing
 
 const staffSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
@@ -23,11 +23,12 @@ const staffSchema = new mongoose.Schema({
   department: { type: String, trim: true, default: "" },
   nicNumber: { type: String, trim: true, default: "", sparse: true },
   registeredDate: { type: Date, default: () => new Date() },
-  status: { type: String, default: "active" },
+  status: { type: String, enum: ["active", "blocked"], default: "active" }, // Updated to enum
+  blockedOn: { type: Date, default: null }, // Added for blocking timestamp
+  reason: { type: String, default: null }, // Added for blocking reason
   resetPasswordToken: { type: String }, // Added for password reset compatibility
   resetPasswordExpires: { type: Date }, // Added for password reset compatibility
 });
-
 
 // Hash password before saving
 staffSchema.pre("save", async function (next) {

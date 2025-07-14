@@ -1,18 +1,19 @@
 import Staff from "../models/Staff.js";
+import BlockedUser from "../models/BlockedUser.js";
 import sendEmail from "../utils/sendEmail.js";
+import Counter from "../models/Counter.js"; // Import Counter model
 
 // POST: Register staff
 export const registerStaff = async (req, res) => {
   try {
-    const { name, username, email, phone, password, role, userID, faculty, department, nicNumber } = req.body;//Extracts data sent from the frontend
-
-    console.log("Received registration data:", { name, username, email, phone, role, userID, faculty, department, nicNumber });
+    const { name, username, email, phone, password, role, faculty, department, nicNumber } = req.body;
+    console.log("Received registration data:", { name, username, email, phone, role, faculty, department, nicNumber });
 
     // Validate required fields with default for role
-    const safeRole = role?.trim() || "security"; 
-    if (!name?.trim() || !username?.trim() || !email?.trim() || !password?.trim() || !userID?.trim()) {
-      console.error("Missing required fields:", { name, username, email, password, userID });
-      return res.status(400).json({ success: false, message: "Name, username, email, password, and userID are required" });
+    const safeRole = role?.trim() || "security";
+    if (!name?.trim() || !username?.trim() || !email?.trim() || !password?.trim()) {
+      console.error("Missing required fields:", { name, username, email, password });
+      return res.status(400).json({ success: false, message: "Name, username, email, and password are required" });
     }
 
     // Email validation
@@ -22,19 +23,28 @@ export const registerStaff = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid email format" });
     }
 
-    // Check for duplicates(username and userID)
-    const [usernameExists, userIDExists] = await Promise.all([
-      Staff.findOne({ username: { $regex: new RegExp(`^${username.trim()}$`, "i") } }),
-      Staff.findOne({ userID: { $regex: new RegExp(`^${userID.trim()}$`, "i") } }),
-    ]);
+    // Define role-based prefixes
+    const rolePrefixes = {
+      admin: "VMSad",
+      security: "VMSsec",
+      host: "VMSho",
+    };
+    const prefix = rolePrefixes[safeRole.toLowerCase()] || "VMSsec"; // Default to security if role not recognized
 
+    // Generate User ID using Counter
+    let counter = await Counter.findOneAndUpdate(
+      { name: `staff-${safeRole.toLowerCase()}` },
+      { $inc: { seq: 1 } },
+      { new: true, upsert: true }
+    );
+    const seq = counter.seq.toString().padStart(4, "0"); // Pad with leading zeros to 4 digits
+    const userID = `${prefix}-${seq}`;
+
+    // Check for duplicates (username only, userID is now auto-generated)
+    const usernameExists = await Staff.findOne({ username: { $regex: new RegExp(`^${username.trim()}$`, "i") } });
     if (usernameExists) {
       console.error("Duplicate username found:", username);
       return res.status(400).json({ success: false, message: "Username already taken" });
-    }
-    if (userIDExists) {
-      console.error("Duplicate userID found:", userID);
-      return res.status(400).json({ success: false, message: "UserID already taken" });
     }
 
     // Create new staff record in the db; password hashing and validation handled by the model
@@ -43,9 +53,9 @@ export const registerStaff = async (req, res) => {
       username: username.trim(),
       email: email.trim(),
       phone: phone?.trim() || "",
-      password: password.trim(), 
+      password: password.trim(),
       role: safeRole.toLowerCase(),
-      userID: userID.trim(),
+      userID, // Use the auto-generated User ID
       faculty: faculty?.trim() || "",
       department: department?.trim() || "",
       nicNumber: nicNumber?.trim() || "",
@@ -56,12 +66,12 @@ export const registerStaff = async (req, res) => {
     console.log("Staff saved successfully:", newStaff.userID);
 
     console.log("FRONTEND_URL in StaffController:", process.env.FRONTEND_URL || "Not defined, using fallback");
-    // Use FRONTEND_URL 
+    // Use FRONTEND_URL
     const baseUrl = process.env.FRONTEND_URL && process.env.FRONTEND_URL !== "undefined" ? process.env.FRONTEND_URL : 'http://localhost:5173';
     const loginUrl = `${baseUrl}/login`;
     console.log("Generated loginUrl:", loginUrl);
 
-    // Send confirmation email 
+    // Send confirmation email
     const emailResult = await sendEmail({
       to: newStaff.email,
       subject: "Welcome to UoM Visitor Management System",
@@ -99,7 +109,7 @@ export const registerStaff = async (req, res) => {
       });
     }
 
-    return res.status(201).json({ 
+    return res.status(201).json({
       success: true,
       message: "Staff registered successfully",
       data: {
@@ -121,11 +131,9 @@ export const registerStaff = async (req, res) => {
       const field = Object.keys(error.keyPattern)[0];
       let message = "Duplicate field error";
       if (field === "username") message = "Username already taken";
-      if (field === "userID") message = "UserID already taken";
-      
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message 
+        message,
       });
     }
 
@@ -136,11 +144,11 @@ export const registerStaff = async (req, res) => {
     }
 
     // Handle other errors
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
       message: "Internal server error",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };
@@ -153,7 +161,7 @@ export const getStaffByRole = async (req, res) => {
 
     const users = await Staff.find({ role });
 
-    const cleanedUsers = users.map(user => ({
+    const cleanedUsers = users.map((user) => ({
       ...user._doc,
       faculty: user.faculty || "",
       department: user.department || "",
@@ -187,5 +195,102 @@ export const deleteStaff = async (req, res) => {
   } catch (error) {
     console.error("Delete error:", error.message);
     res.status(500).json({ success: false, message: "Failed to delete staff", error: error.message });
+  }
+};
+
+// GET: Get blocked users (from BlockedUser collection)
+export const getBlockedUsers = async (req, res) => {
+  try {
+    const blockedUsers = await BlockedUser.find();
+    console.log("Blocked users fetched:", blockedUsers);
+    res.status(200).json(blockedUsers);
+  } catch (error) {
+    console.error("Error fetching blocked users:", error.message);
+    res.status(500).json({ success: false, message: "Failed to fetch blocked users", error: error.message });
+  }
+};
+
+// POST: Block a registered user (create BlockedUser document)
+export const blockUser = async (req, res) => {
+  try {
+    const { email, role, reason } = req.body;
+    if (!email || !role || !reason) {
+      return res.status(400).json({ success: false, message: "Email, role, and reason are required" });
+    }
+
+    // Check if user exists in Staff or VisitorSignup
+    let user;
+    if (["host", "security", "admin"].includes(role.toLowerCase())) {
+      user = await Staff.findOne({ email: email.trim(), role: role.toLowerCase() });
+      if (!user) {
+        return res.status(404).json({ success: false, message: "Staff member not found" });
+      }
+    } else if (role.toLowerCase() === "visitor") {
+      user = await VisitorSignup.findOne({ email: email.trim() });
+      if (!user) {
+        return res.status(404).json({ success: false, message: "Visitor not found" });
+      }
+    } else {
+      return res.status(400).json({ success: false, message: "Invalid role specified" });
+    }
+
+    // Check if user is already blocked
+    const existingBlockedUser = await BlockedUser.findOne({ email: email.trim() });
+    if (existingBlockedUser) {
+      return res.status(400).json({ success: false, message: "User is already blocked" });
+    }
+
+    // Create new BlockedUser document
+    const blockedUser = await BlockedUser.create({
+      name: user.name || `${user.firstName} ${user.lastName}`,
+      email: user.email,
+      role: role.toLowerCase(),
+      reason: reason,
+    });
+
+    // Optionally update the original user's status (if you want to keep this)
+    if (user instanceof Staff) {
+      await Staff.findByIdAndUpdate(user._id, { status: "blocked" }, { new: true });
+    } else if (user instanceof VisitorSignup) {
+      await VisitorSignup.findByIdAndUpdate(user._id, { status: "blocked" }, { new: true });
+    }
+
+    res.status(200).json({ success: true, message: "User blocked successfully", data: blockedUser });
+  } catch (error) {
+    console.error("Error blocking user:", error.message);
+    res.status(500).json({ success: false, message: "Failed to block user", error: error.message });
+  }
+};
+
+// DELETE: Unblock a user (remove from BlockedUser and restore status)
+export const unblockUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blockedUser = await BlockedUser.findById(id);
+    if (!blockedUser) {
+      return res.status(404).json({ success: false, message: "Blocked user not found" });
+    }
+
+    // Find and update the original user (Staff or VisitorSignup)
+    const staff = await Staff.findOne({ email: blockedUser.email });
+    let updatedUser;
+    if (staff) {
+      updatedUser = await Staff.findByIdAndUpdate(staff._id, { status: "active" }, { new: true });
+    } else {
+      const visitor = await VisitorSignup.findOne({ email: blockedUser.email });
+      if (!visitor) {
+        return res.status(404).json({ success: false, message: "Original user not found" });
+      }
+      updatedUser = await VisitorSignup.findByIdAndUpdate(visitor._id, { status: "active" }, { new: true });
+    }
+
+    // Remove the blocked user record
+    await BlockedUser.findByIdAndDelete(id);
+
+    console.log("User unblocked successfully:", updatedUser);
+    res.status(200).json({ success: true, message: "User unblocked successfully", data: updatedUser });
+  } catch (error) {
+    console.error("Error unblocking user:", error.message);
+    res.status(500).json({ success: false, message: "Failed to unblock user", error: error.message });
   }
 };
