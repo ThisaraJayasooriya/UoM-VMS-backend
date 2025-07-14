@@ -15,6 +15,7 @@ import hostAppointmentsRoutes from './routes/hostAppointmentsRoutes.js';
 import  userProfileRoutes  from "./routes/userProfileRoutes.js";
 import visitorRoutes from './routes/visitorRoutes.js'; 
 import userRoutes from './routes/userRoutes.js';
+import "./cron/autoUpdateAppointments.js"
 
 
 // Load environment variables from .env file
