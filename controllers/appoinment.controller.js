@@ -74,7 +74,57 @@ export const getAppoinments = async (req, res) => {
 // Get all hosts
 export const getAllHosts = async (req, res) => {
   try {
-    const hosts = await Staff.find({ role: "host" }).select("name _id");
+    const hosts = await Staff.find({ role: "host" }).select("name _id faculty department");
+    res.status(200).json(hosts);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching hosts", error });
+  }
+};
+
+// Get all faculties
+export const getAllFaculties = async (req, res) => {
+  try {
+    const faculties = await Staff.distinct("faculty", { 
+      role: "host", 
+      faculty: { $ne: "", $exists: true } 
+    });
+    res.status(200).json(faculties.filter(faculty => faculty && faculty.trim() !== ""));
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching faculties", error });
+  }
+};
+
+// Get departments by faculty
+export const getDepartmentsByFaculty = async (req, res) => {
+  try {
+    const { faculty } = req.params;
+    const departments = await Staff.distinct("department", { 
+      role: "host", 
+      faculty: faculty,
+      department: { $ne: "", $exists: true } 
+    });
+    res.status(200).json(departments.filter(dept => dept && dept.trim() !== ""));
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching departments", error });
+  }
+};
+
+// Get hosts by faculty and department
+export const getHostsByFacultyAndDepartment = async (req, res) => {
+  try {
+    const { faculty, department } = req.params;
+    
+    let query = { role: "host" };
+    
+    if (faculty && faculty !== "all") {
+      query.faculty = faculty;
+    }
+    
+    if (department && department !== "all") {
+      query.department = department;
+    }
+    
+    const hosts = await Staff.find(query).select("name _id faculty department");
     res.status(200).json(hosts);
   } catch (error) {
     res.status(500).json({ message: "Error fetching hosts", error });
