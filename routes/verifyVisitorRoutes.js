@@ -1,5 +1,5 @@
 import express from "express";
-import { searchVisitor, checkInVisitor, checkOutVisitor, getRecentActivities } from "../controllers/VerifyVisitorController.js";
+import { searchVisitor, checkInVisitor, checkOutVisitor } from "../controllers/VerifyVisitorController.js";
 
 const router = express.Router();
 
@@ -7,6 +7,5 @@ const router = express.Router();
 router.get("/search", searchVisitor); // Search visitor by visitorId or NIC
 router.patch("/:visitorId/checkin", checkInVisitor); // Check-in visitor
 router.patch("/:visitorId/checkout", checkOutVisitor); // Check-out visitor
-router.get("/activities", getRecentActivities); // Get recent activities
 
 export default router;

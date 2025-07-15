@@ -2,6 +2,8 @@ import Staff from "../models/Staff.js";
 import BlockedUser from "../models/BlockedUser.js";
 import sendEmail from "../utils/sendEmail.js";
 import Counter from "../models/Counter.js"; // Import Counter model
+import Notification from "../models/Notification.js";
+import VisitorSignup from "../models/VisitorSignup.js";
 
 // POST: Register staff
 export const registerStaff = async (req, res) => {
@@ -62,6 +64,16 @@ export const registerStaff = async (req, res) => {
       status: "active",
       registeredDate: new Date(),
     });
+
+    // Notify all admins
+    const admins = await Staff.find({ role: "admin" });
+    const notificationPromises = admins.map((admin) =>
+      Notification.create({
+        message: `${newStaff.name} - ${newStaff.userID} is registered as a ${newStaff.role}`,
+        admin: admin._id,
+      })
+    );
+    await Promise.all(notificationPromises);
 
     console.log("Staff saved successfully:", newStaff.userID);
 
@@ -202,10 +214,8 @@ export const deleteStaff = async (req, res) => {
 export const getBlockedUsers = async (req, res) => {
   try {
     const blockedUsers = await BlockedUser.find();
-    console.log("Blocked users fetched:", blockedUsers);
     res.status(200).json(blockedUsers);
   } catch (error) {
-    console.error("Error fetching blocked users:", error.message);
     res.status(500).json({ success: false, message: "Failed to fetch blocked users", error: error.message });
   }
 };
@@ -213,34 +223,30 @@ export const getBlockedUsers = async (req, res) => {
 // POST: Block a registered user (create BlockedUser document)
 export const blockUser = async (req, res) => {
   try {
-    const { email, role, reason } = req.body;
+    const { email, role, reason,} = req.body;
     if (!email || !role || !reason) {
       return res.status(400).json({ success: false, message: "Email, role, and reason are required" });
     }
 
-    // Check if user exists in Staff or VisitorSignup
+    // Find user in Staff or VisitorSignup
     let user;
     if (["host", "security", "admin"].includes(role.toLowerCase())) {
       user = await Staff.findOne({ email: email.trim(), role: role.toLowerCase() });
-      if (!user) {
-        return res.status(404).json({ success: false, message: "Staff member not found" });
-      }
+      if (!user) return res.status(404).json({ success: false, message: "Staff member not found" });
     } else if (role.toLowerCase() === "visitor") {
       user = await VisitorSignup.findOne({ email: email.trim() });
-      if (!user) {
-        return res.status(404).json({ success: false, message: "Visitor not found" });
-      }
+      if (!user) return res.status(404).json({ success: false, message: "Visitor not found" });
     } else {
       return res.status(400).json({ success: false, message: "Invalid role specified" });
     }
 
-    // Check if user is already blocked
+    // Prevent duplicate block
     const existingBlockedUser = await BlockedUser.findOne({ email: email.trim() });
     if (existingBlockedUser) {
       return res.status(400).json({ success: false, message: "User is already blocked" });
     }
 
-    // Create new BlockedUser document
+    // Create BlockedUser document
     const blockedUser = await BlockedUser.create({
       name: user.name || `${user.firstName} ${user.lastName}`,
       email: user.email,
@@ -248,16 +254,15 @@ export const blockUser = async (req, res) => {
       reason: reason,
     });
 
-    // Optionally update the original user's status (if you want to keep this)
+    // Update original user's status
     if (user instanceof Staff) {
       await Staff.findByIdAndUpdate(user._id, { status: "blocked" }, { new: true });
     } else if (user instanceof VisitorSignup) {
       await VisitorSignup.findByIdAndUpdate(user._id, { status: "blocked" }, { new: true });
     }
 
-    res.status(200).json({ success: true, message: "User blocked successfully", data: blockedUser });
+     res.status(200).json({ success: true, message: "User blocked successfully", data: blockedUser });
   } catch (error) {
-    console.error("Error blocking user:", error.message);
     res.status(500).json({ success: false, message: "Failed to block user", error: error.message });
   }
 };
@@ -271,7 +276,7 @@ export const unblockUser = async (req, res) => {
       return res.status(404).json({ success: false, message: "Blocked user not found" });
     }
 
-    // Find and update the original user (Staff or VisitorSignup)
+    // Restore original user's status
     const staff = await Staff.findOne({ email: blockedUser.email });
     let updatedUser;
     if (staff) {
@@ -284,13 +289,11 @@ export const unblockUser = async (req, res) => {
       updatedUser = await VisitorSignup.findByIdAndUpdate(visitor._id, { status: "active" }, { new: true });
     }
 
-    // Remove the blocked user record
+    // Remove BlockedUser document
     await BlockedUser.findByIdAndDelete(id);
 
-    console.log("User unblocked successfully:", updatedUser);
     res.status(200).json({ success: true, message: "User unblocked successfully", data: updatedUser });
   } catch (error) {
-    console.error("Error unblocking user:", error.message);
     res.status(500).json({ success: false, message: "Failed to unblock user", error: error.message });
   }
 };

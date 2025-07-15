@@ -8,7 +8,7 @@ const blockedUserSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true, // Ensure no duplicate blocked emails
+    
   },
   role: {
     type: String,

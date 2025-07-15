@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 import { nanoid } from "nanoid";
 import VisitorSignup from "../models/VisitorSignup.js";
+import Notification from "../models/Notification.js"; 
+import Staff from "../models/Staff.js"; 
 
 // Read disposable email domains
 const disposableDomains = JSON.parse(
@@ -118,6 +120,22 @@ export const signupVisitor = async (req, res) => {
       passportNumber: nationality === "Foreigner" ? passportNumber : undefined,
       password, // Let the model handle the hashing
     });
+
+// ...existing code...
+const admins = await Staff.find({ role: "admin" }); // Fetch all admins
+
+const notificationPromises = admins.map((admin) =>
+  Notification.create({
+    message: `${newVisitor.firstName} ${newVisitor.lastName} - ${newVisitor.visitorId} is registered as a visitor`,
+    admin: admin._id, // Assign notification to each admin
+    read: false,
+    timestamp: Date.now(),
+  })
+);
+
+await Promise.all(notificationPromises);
+// ...existing code...
+
 
     // Generate JWT token
     const token = jwt.sign({ id: newVisitor._id }, process.env.JWT_SECRET, {
