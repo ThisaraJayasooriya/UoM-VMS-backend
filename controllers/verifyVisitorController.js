@@ -1,6 +1,7 @@
 import VerifyVisitor from "../models/VerifyVisitor.js";
 import Activity from "../models/Activity.js";
 import Appointment from "../models/Appoinment.js";
+import Staff from "../models/Staff.js";
 
 // Search visitor by visitorId or NIC
 export const searchVisitor = async (req, res) => {
@@ -17,8 +18,16 @@ export const searchVisitor = async (req, res) => {
     if (!visitor) {
       return res.status(404).json({ message: "Visitor not found" });
     }
+    const staff = await Staff.findOne({ _id: visitor.hostId });
 
-    res.status(200).json(visitor);
+    if (!staff) {
+      return res.status(404).json({ message: "Host not found" });
+    }
+
+    res.status(200).json({
+      visitor,
+      staff,
+    });
   } catch (error) {
     res.status(500).json({ message: "Error searching for visitor", error: error.message });
   }
