@@ -192,10 +192,11 @@ export const confirmAppointment = async (req, res) => {
         name: `${appointment.firstname} ${appointment.lastname}`,
         nic: visitor.nicNumber, // if nic is not available in appointment, skip or improve this
         vehicleNumber: appointment.vehicle,
-        host: appointment.hostId.toString(),
+        hostId: appointment.hostId.toString(),
         purpose: appointment.reason,
         company: "N/A", // optional: get from Visitorsignup if needed
         status: "Awaiting Check-In",
+        date: appointment.response.date, // assuming response.date is available
       });
 
       await newVerifyVisitor.save();

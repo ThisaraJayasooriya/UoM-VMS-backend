@@ -13,9 +13,8 @@ const verifyVisitorSchema = new mongoose.Schema({
   name: { type: String, required: true },
   nic: { type: String, required: true },
   vehicleNumber: { type: String },
-  host: { type: String, required: true },
+  hostId: { type: String, required: true },
   purpose: { type: String },
-  company: { type: String },
   checkInTime: { type: Date },
   checkOutTime: { type: Date },
   status: {
@@ -23,6 +22,7 @@ const verifyVisitorSchema = new mongoose.Schema({
     enum: ["Awaiting Check-In", "Checked-In", "Checked-Out"],
     default: "Awaiting Check-In",
   },
+  date: {type: String, required: true}
 }, { timestamps: true });
 
 const VerifyVisitor = mongoose.model("VerifyVisitor", verifyVisitorSchema);

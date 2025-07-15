@@ -109,9 +109,11 @@ export const checkOutVisitor = async (req, res) => {
 // Get recent activities
 export const getRecentActivities = async (req, res) => {
   try {
-    const activities = await Activity.find()
+    // Ensure only the latest 10 activities are returned
+    const activities = await Activity.find({})
       .sort({ timestamp: -1 })
-      .limit(10); // Limit to 10 most recent activities
+      .limit(10)
+      .exec();
 
     res.status(200).json(activities);
   } catch (error) {
