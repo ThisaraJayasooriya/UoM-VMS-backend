@@ -1,5 +1,7 @@
 import VerifyVisitor from "../models/VerifyVisitor.js";
 import Activity from "../models/Activity.js";
+import Appointment from "../models/Appoinment.js";
+import Staff from "../models/Staff.js";
 
 // Search visitor by visitorId or NIC
 export const searchVisitor = async (req, res) => {
@@ -8,7 +10,7 @@ export const searchVisitor = async (req, res) => {
   try {
     const visitor = await VerifyVisitor.findOne({
       $or: [
-        { visitorId: { $regex: term, $options: "i" } }, 
+        { appointmentId: { $regex: term, $options: "i" } }, 
         { nic: { $regex: term, $options: "i" } },
       ],
     });
@@ -16,8 +18,16 @@ export const searchVisitor = async (req, res) => {
     if (!visitor) {
       return res.status(404).json({ message: "Visitor not found" });
     }
+    const staff = await Staff.findOne({ _id: visitor.hostId });
 
-    res.status(200).json(visitor);
+    if (!staff) {
+      return res.status(404).json({ message: "Host not found" });
+    }
+
+    res.status(200).json({
+      visitor,
+      staff,
+    });
   } catch (error) {
     res.status(500).json({ message: "Error searching for visitor", error: error.message });
   }
@@ -25,10 +35,10 @@ export const searchVisitor = async (req, res) => {
 
 // Check-in visitor
 export const checkInVisitor = async (req, res) => {
-  const { visitorId } = req.params; 
+  const { appointmentId } = req.params; 
 
   try {
-    const visitor = await VerifyVisitor.findOne({ visitorId }); 
+    const visitor = await VerifyVisitor.findOne({ appointmentId });
 
     if (!visitor) {
       return res.status(404).json({ message: "Visitor not found" });
@@ -45,6 +55,13 @@ export const checkInVisitor = async (req, res) => {
     visitor.checkInTime = new Date();
     visitor.status = "Checked-In";
     await visitor.save();
+    
+    // Update appointment status to "completed"
+    await Appointment.findOneAndUpdate(
+      { appointmentId },
+      { status: "completed" }
+    );
+
 
     // Log activity
     const activity = new Activity({
@@ -66,10 +83,10 @@ export const checkInVisitor = async (req, res) => {
 
 // Check-out visitor
 export const checkOutVisitor = async (req, res) => {
-  const { visitorId } = req.params; 
+  const { appointmentId } = req.params; 
 
   try {
-    const visitor = await VerifyVisitor.findOne({ visitorId }); 
+    const visitor = await VerifyVisitor.findOne({ appointmentId });
 
     if (!visitor) {
       return res.status(404).json({ message: "Visitor not found" });
@@ -101,9 +118,11 @@ export const checkOutVisitor = async (req, res) => {
 // Get recent activities
 export const getRecentActivities = async (req, res) => {
   try {
-    const activities = await Activity.find()
+    // Ensure only the latest 10 activities are returned
+    const activities = await Activity.find({})
       .sort({ timestamp: -1 })
-      .limit(10); // Limit to 10 most recent activities
+      .limit(10)
+      .exec();
 
     res.status(200).json(activities);
   } catch (error) {

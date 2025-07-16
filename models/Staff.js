@@ -32,7 +32,7 @@ const staffSchema = new mongoose.Schema({
 
 // Hash password before saving
 staffSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
+  if (this.skipPasswordHash || !this.isModified("password")) {
     return next();
   }
   try {
