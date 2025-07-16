@@ -14,18 +14,18 @@ import feedbackRoutes from './routes/feedbackRoutes.js';
 import visitorLogbookRoutes from './routes/visitorLogbookRoutes.js';
 import hostAppointmentsRoutes from './routes/hostAppointmentsRoutes.js';
 import userProfileRoutes from "./routes/userProfileRoutes.js";
-import visitorRoutes from './routes/visitorRoutes.js'; 
+import visitorRoutes from './routes/visitorRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-import securityRoutes from './routes/securityRoutes.js'; // Moved here
+import securityRoutes from './routes/securityRoutes.js';
+import visitorHistoryRoutes from './routes/visitorHistoryRoutes.js'; // Added new route
 import "./cron/autoUpdateAppointments.js";
-
 
 // Load environment variables from .env file
 dotenv.config();
 
 // Log environment variables for debugging
 console.log("Loaded environment variables:", {
-  MONGO_URI: process.env.MONGO_URI ? "[REDACTED]" : undefined, // Added debug
+  MONGO_URI: process.env.MONGO_URI ? "[REDACTED]" : undefined,
   EMAIL_USER: process.env.EMAIL_USER,
   EMAIL_PASS: process.env.EMAIL_PASS ? "[REDACTED]" : undefined,
   CLIENT_URL: process.env.CLIENT_URL
@@ -49,7 +49,7 @@ app.use(cookieParser());
 // CORS configuration
 app.use(
   cors({
-     origin: ['http://localhost:5173', 'http://localhost:5174'],
+    origin: ['http://localhost:5173', 'http://localhost:5174'],
     credentials: true,
   })
 );
@@ -88,9 +88,10 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/logbook', visitorLogbookRoutes);
 app.use('/api/appointments', hostAppointmentsRoutes);
 app.use('/api/userProfile', userProfileRoutes);
-app.use('/api/visitor', visitorRoutes); 
+app.use('/api/visitor', visitorRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/security', securityRoutes); // Moved here
+app.use('/api/security', securityRoutes);
+app.use('/api', visitorHistoryRoutes); // Added new route
 
 // Log feedback routes
 feedbackRoutes.stack.forEach((r) => {
