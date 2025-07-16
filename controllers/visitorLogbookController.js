@@ -1,12 +1,13 @@
 import VerifyVisitor from '../models/VerifyVisitor.js';
 import VisitorSignup from '../models/VisitorSignup.js';
+import Staff from '../models/Staff.js'; // Import the Staff model
 
-// Fetch all logbook entries
 export const getVisitorLogbook = async (req, res) => {
   try {
     const logEntries = await VerifyVisitor.find().lean();
 
     for (const entry of logEntries) {
+      // Enrich email and name from VisitorSignup
       const signup = await VisitorSignup.findOne({ visitorId: entry.visitorId });
       entry.email = signup ? signup.email : '';
       if (!entry.name || entry.name.trim() === '') {
@@ -15,6 +16,19 @@ export const getVisitorLogbook = async (req, res) => {
       if (!entry.visitorId) {
         entry.visitorId = signup ? signup.visitorId : entry.visitorId || 'Unknown';
       }
+
+      // Resolve hostId to host name
+      if (entry.hostId) {
+        const staff = await Staff.findById(entry.hostId).lean();
+        entry.host = staff ? staff.name : 'Not Assigned';
+      } else {
+        entry.host = 'Not Assigned';
+      }
+
+      // Map fields for frontend compatibility
+      entry.purpose = entry.purpose || 'Not Specified';
+      entry.checkIn = entry.checkInTime || null;
+      entry.checkOut = entry.checkOutTime || null;
     }
 
     res.json(logEntries);
@@ -40,11 +54,19 @@ export const updateLogEntry = async (req, res) => {
       return res.status(404).json({ message: 'Entry not found' });
     }
 
-    // Sync email and name from VisitorSignup if needed
+    // Sync email and name from VisitorSignup
     const signup = await VisitorSignup.findOne({ visitorId: id });
     updatedEntry.email = signup ? signup.email : updatedEntry.email || '';
     if (!updatedEntry.name || updatedEntry.name.trim() === '') {
       updatedEntry.name = signup ? `${signup.firstName} ${signup.lastName}` : updatedEntry.name || 'Unknown';
+    }
+
+    // Resolve hostId to host name
+    if (updatedEntry.hostId) {
+      const staff = await Staff.findById(updatedEntry.hostId).lean();
+      updatedEntry.host = staff ? staff.name : 'Not Assigned';
+    } else {
+      updatedEntry.host = 'Not Assigned';
     }
 
     res.json(updatedEntry);
@@ -54,7 +76,7 @@ export const updateLogEntry = async (req, res) => {
   }
 };
 
-// Delete a logbook entry (optional, if you prefer separate function)
+// Delete a logbook entry
 export const deleteLogEntry = async (req, res) => {
   try {
     const { id } = req.params; // visitorId from the URL
