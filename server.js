@@ -8,7 +8,7 @@ import errorHandler from "./middleware/errorHandler.js";
 import rateLimit from "express-rate-limit";
 import staffRoutes from "./routes/staffRoutes.js";
 import hostRoutes from "./routes/hostRoutes.js";
-import verifyVisitorRoutes from "./routes/VerifyVisitorRoutes.js";
+import verifyVisitorRoutes from "./routes/verifyVisitorRoutes.js";
 import appointmentRoutes from './routes/appoiment.routes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import visitorLogbookRoutes from './routes/visitorLogbookRoutes.js';

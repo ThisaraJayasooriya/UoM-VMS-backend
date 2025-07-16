@@ -68,7 +68,14 @@ export const login = async (req, res) => {
         role = user.role || "staff";
       }
     }
-
+    //newnewnew
+    // For staff, check if blocked
+    if (userType === "staff") {
+      if (user.status && user.status.toLowerCase() === "blocked") {
+        return errorResponse(res, 403, "Your account is blocked. Please contact admin.");
+      }
+    }
+    //newnewnew
     if (!user) {
       return errorResponse(res, 401, "Invalid credentials");
     }
@@ -84,6 +91,9 @@ export const login = async (req, res) => {
     if (userType === "visitor") {
       if (user.status && user.status.toLowerCase() !== "active") {
         return errorResponse(res, 403, "Account is not active. Please contact support.");
+      }
+      if (user.status && user.status.toLowerCase() === "blocked") {
+        return errorResponse(res, 403, "Your account is blocked. Please contact admin.");
       }
     }
 
