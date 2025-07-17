@@ -20,6 +20,7 @@ import securityRoutes from './routes/securityRoutes.js';
 import visitorHistoryRoutes from './routes/visitorHistoryRoutes.js'; // Added new route
 import insights from './routes/insights.js'; 
 import "./cron/autoUpdateAppointments.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -91,6 +92,7 @@ app.use('/api/appointments', hostAppointmentsRoutes);
 app.use('/api/userProfile', userProfileRoutes);
 app.use('/api/visitor', visitorRoutes);
 app.use('/api/users', userRoutes);
+app.use("/api/notifications", notificationRoutes);
 app.use('/api/security', securityRoutes);
 app.use('/api', visitorHistoryRoutes); // Added new route
 app.use('/api/insights', insights);

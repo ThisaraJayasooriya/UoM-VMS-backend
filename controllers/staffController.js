@@ -4,7 +4,8 @@ import sendEmail from "../utils/sendEmail.js";
 import Counter from "../models/Counter.js"; // Import Counter model
 import Notification from "../models/Notification.js";
 import VisitorSignup from "../models/VisitorSignup.js";
-
+import { createNotification } from "./NotificationController.js";
+import validator from "validator";
 // POST: Register staff
 export const registerStaff = async (req, res) => {
   try {
@@ -19,8 +20,8 @@ export const registerStaff = async (req, res) => {
     }
 
     // Email validation
-    const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
-    if (!emailRegex.test(email.trim())) {
+
+if (!validator.isEmail(email.trim())) {
       console.error("Invalid email format:", email);
       return res.status(400).json({ success: false, message: "Invalid email format" });
     }
@@ -64,16 +65,8 @@ export const registerStaff = async (req, res) => {
       status: "active",
       registeredDate: new Date(),
     });
+    await createNotification(`${newStaff.name} registered as ${newStaff.role}`, "staff");
 
-    // Notify all admins
-    const admins = await Staff.find({ role: "admin" });
-    const notificationPromises = admins.map((admin) =>
-      Notification.create({
-        message: `${newStaff.name} - ${newStaff.userID} is registered as a ${newStaff.role}`,
-        admin: admin._id,
-      })
-    );
-    await Promise.all(notificationPromises);
 
     console.log("Staff saved successfully:", newStaff.userID);
 
@@ -260,6 +253,9 @@ export const blockUser = async (req, res) => {
     } else if (user instanceof VisitorSignup) {
       await VisitorSignup.findByIdAndUpdate(user._id, { status: "blocked" }, { new: true });
     }
+
+    await createNotification(`User ${user.name || user.email} was blocked for: ${reason}`, "block");
+
 
      res.status(200).json({ success: true, message: "User blocked successfully", data: blockedUser });
   } catch (error) {

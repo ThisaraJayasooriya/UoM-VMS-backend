@@ -93,6 +93,14 @@ const visitorSignupSchema = new mongoose.Schema(
           "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
       },
     },
+
+    
+    status: {
+      type: String,
+      enum: ["active", "blocked"],
+      default: "active",
+    },
+
     // Add reset token fields for password reset
     resetPasswordToken: {
       type: String,

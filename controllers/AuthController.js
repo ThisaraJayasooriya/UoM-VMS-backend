@@ -61,7 +61,7 @@ export const login = async (req, res) => {
       // Check Staff collection
       user = await Staff.findOne({
         username: { $regex: new RegExp(`^${username.trim()}$`, "i") },
-      }).select("+password");
+      }).select("+password +status");
 
       if (user) {
         userType = "staff";
@@ -89,12 +89,16 @@ export const login = async (req, res) => {
 
     // For visitors, check account status
     if (userType === "visitor") {
-      if (user.status && user.status.toLowerCase() !== "active") {
-        return errorResponse(res, 403, "Account is not active. Please contact support.");
-      }
-      if (user.status && user.status.toLowerCase() === "blocked") {
-        return errorResponse(res, 403, "Your account is blocked. Please contact admin.");
-      }
+
+  if (user.status && user.status.toLowerCase() === "blocked") {
+    return errorResponse(res, 403, "Your account is blocked. Please contact admin.");
+  }
+
+  // 🟡 Then check for any other non-active states
+  if (user.status && user.status.toLowerCase() !== "active") {
+    return errorResponse(res, 403, "Account is not active. Please contact support.");
+  }
+
     }
 
     // Prepare user data
