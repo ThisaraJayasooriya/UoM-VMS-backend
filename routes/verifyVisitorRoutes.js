@@ -4,6 +4,8 @@ import { searchVisitor, checkInVisitor, checkOutVisitor, getRecentActivities } f
 const router = express.Router();
 
 // Routes
+router.get("/search", searchVisitor); // Search for a visitor by name or ID
+
 router.patch("/:appointmentId/checkin", checkInVisitor); 
 router.patch("/:appointmentId/checkout", checkOutVisitor); 
 router.get("/activities", getRecentActivities); 

@@ -18,6 +18,7 @@ import visitorRoutes from './routes/visitorRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import securityRoutes from './routes/securityRoutes.js'; // Moved here
 import "./cron/autoUpdateAppointments.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 
 // Load environment variables from .env file
@@ -91,6 +92,7 @@ app.use('/api/userProfile', userProfileRoutes);
 app.use('/api/visitor', visitorRoutes); 
 app.use('/api/users', userRoutes);
 app.use('/api/security', securityRoutes); // Moved here
+app.use("/api/notifications", notificationRoutes);
 
 // Log feedback routes
 feedbackRoutes.stack.forEach((r) => {
