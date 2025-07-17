@@ -1,5 +1,5 @@
 import express from "express";
-import { searchVisitor, checkInVisitor, checkOutVisitor, getRecentActivities } from "../controllers/VerifyVisitorController.js";
+import { searchVisitor, checkInVisitor, checkOutVisitor, getRecentActivities } from "../controllers/verifyVisitorController.js";
 
 const router = express.Router();
 
