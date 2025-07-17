@@ -4,7 +4,8 @@ import sendEmail from "../utils/sendEmail.js";
 import Counter from "../models/Counter.js"; // Import Counter model
 import Notification from "../models/Notification.js";
 import VisitorSignup from "../models/VisitorSignup.js";
-
+import { createNotification } from "./NotificationController.js";
+import validator from "validator";
 // POST: Register staff
 export const registerStaff = async (req, res) => {
   try {
@@ -19,8 +20,8 @@ export const registerStaff = async (req, res) => {
     }
 
     // Email validation
-    const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
-    if (!emailRegex.test(email.trim())) {
+
+if (!validator.isEmail(email.trim())) {
       console.error("Invalid email format:", email);
       return res.status(400).json({ success: false, message: "Invalid email format" });
     }
