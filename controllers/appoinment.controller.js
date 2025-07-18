@@ -339,5 +339,52 @@ export const visitHistory = async (req, res) => {
   }
 };
 
+// Select time slot from available slots
+export const selectTimeSlot = async (req, res) => {
+  try {
+    const { appointmentId } = req.params;
+    const { slotId } = req.body;
+
+    // Find the appointment
+    const appointment = await Appointment.findById(appointmentId);
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    // Check if this is a multiple slots appointment
+    if (appointment.response.responseType !== "allSlots") {
+      return res.status(400).json({ message: "This appointment doesn't have multiple slots" });
+    }
+
+    // Find the selected slot
+    const selectedSlot = appointment.availableTimeSlots.find(
+      slot => slot.slotId === slotId
+    );
+
+    if (!selectedSlot) {
+      return res.status(404).json({ message: "Time slot not found" });
+    }
+
+    // Update appointment with selected slot
+    appointment.selectedTimeSlot = selectedSlot;
+    appointment.response = {
+      date: selectedSlot.date,
+      startTime: selectedSlot.startTime,
+      endTime: selectedSlot.endTime,
+      responseType: "allSlots",
+    };
+
+    await appointment.save();
+
+    res.status(200).json({ 
+      message: "Time slot selected successfully", 
+      appointment 
+    });
+  } catch (error) {
+    console.error("Error selecting time slot:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 

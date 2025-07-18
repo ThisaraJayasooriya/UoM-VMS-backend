@@ -29,6 +29,18 @@
       endTime: String,
       responseType: String, // "allSlots" or "exactSlot"
     },
+    availableTimeSlots: [{
+      slotId: String,
+      date: String,
+      startTime: String,
+      endTime: String,
+    }],
+    selectedTimeSlot: {
+      slotId: String,
+      date: String,
+      startTime: String,
+      endTime: String,
+    },
   });
 
   const Appointment = mongoose.model("Appointment", appointmentSchema);
