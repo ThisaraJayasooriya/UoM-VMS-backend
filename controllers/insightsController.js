@@ -1,6 +1,7 @@
 import Activity from "../models/Activity.js";
 import Appointment from "../models/Appoinment.js";
 import VisitorSignup from "../models/VisitorSignup.js";
+import VerifyVisitor from "../models/VerifyVisitor.js";
 
 // Helper function to format 24-hour number to 12-hour AM/PM string
 function formatHourToAMPM(hour24) {
@@ -126,6 +127,20 @@ export const getDashboardInsights = async (req, res) => {
       ? formatHourToAMPM(peakHourResult[0]._id)
       : "N/A";
 
+    // Live Monitoring
+    const scheduledCount = await Appointment.countDocuments({
+      status: "completed",
+      requestedAt: { $gte: startDate, $lte: now },
+    });
+
+    const walkInCount = await VerifyVisitor.countDocuments({
+      status: "Checked-In",
+      createdAt: { $gte: startDate, $lte: now },
+    });
+
+    const totalLiveVisitors = scheduledCount + walkInCount;
+
+
     res.json({
       checkInCount: todayCheckInCount,
       checkOutCount: todayCheckOutCount,
@@ -133,6 +148,11 @@ export const getDashboardInsights = async (req, res) => {
       peakHour,
       trend: fillDates,
       visitorDistribution,
+        liveMonitoring: {
+            scheduledCount,
+            walkInCount,
+            totalLiveVisitors,
+        },      
     });
   } catch (err) {
     console.error("getInsights error:", err);
