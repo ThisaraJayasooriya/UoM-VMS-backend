@@ -3,6 +3,7 @@ import VerifyVisitor from "../models/VerifyVisitor.js";
 import Staff from "../models/Staff.js";
 import { getNextSequence } from "../utils/getNextSequence.js";
 import VisitorSignup from "../models/VisitorSignup.js";
+import HostAvailability from "../models/HostAvailability.js";
 
 // Create appointment
 export const makeAppoinment = async (req, res) => {
@@ -151,6 +152,7 @@ export const getAcceptedAppointment = async (req, res) => {
   }
 };
 
+
 // ✅ Confirm appointment
 export const confirmAppointment = async (req, res) => {
   try {
@@ -175,28 +177,77 @@ export const confirmAppointment = async (req, res) => {
 
     const visitor = await VisitorSignup.findById(appointment.visitorId);
     if (!visitor) {
-      // Handle case where visitor is not found
       console.error("Visitor not found for appointment:", appointmentId);
       return res.status(404).json({ message: "Visitor not found" });
     }
 
-    // 3. Check if a VerifyVisitor already exists to prevent duplicates
+    // Handle HostAvailability update/creation - check selectedTimeSlot first
+    let timeSlotData = null;
+
+    if (appointment.selectedTimeSlot && appointment.selectedTimeSlot.date && appointment.selectedTimeSlot.startTime && appointment.selectedTimeSlot.endTime) {
+      timeSlotData = appointment.selectedTimeSlot;
+    } else if (appointment.response && appointment.response.date && appointment.response.startTime && appointment.response.endTime) {
+      timeSlotData = appointment.response;
+    }
+
+    if (timeSlotData) {
+      const { date, startTime, endTime } = timeSlotData;
+      
+      console.log("Time slot data:", { date, startTime, endTime });
+
+      // Check if the time slot exists in HostAvailability
+      const existingSlot = await HostAvailability.findOne({
+        hostId: appointment.hostId,
+        date: date,
+        startTime: startTime,
+        endTime: endTime
+      });
+
+      if (existingSlot) {
+        // Update existing slot status to "booked"
+        existingSlot.status = "booked";
+        await existingSlot.save();
+        console.log("Updated existing slot to booked:", existingSlot._id);
+      } else {
+        // Create new slot with "booked" status
+        const newSlot = new HostAvailability({
+          hostId: appointment.hostId,
+          date: date,
+          startTime: startTime,
+          endTime: endTime,
+          status: "booked"
+        });
+        await newSlot.save();
+        console.log("Created new booked slot in HostAvailability:", newSlot._id);
+      }
+    } else {
+      console.warn("No valid time slot data found for appointment:", appointmentId);
+      console.log("appointment.selectedTimeSlot:", appointment.selectedTimeSlot);
+      console.log("appointment.response:", appointment.response);
+    }
+
+    // Check if a VerifyVisitor already exists to prevent duplicates
     const existing = await VerifyVisitor.findOne({
       appointmentId: appointment.appointmentId,
     });
     if (!existing) {
-      // 4. Create VerifyVisitor from appointment data
+      // Get the date for VerifyVisitor - prefer selectedTimeSlot, fallback to response
+      const dateForVerify = appointment.selectedTimeSlot?.date || 
+                           appointment.response?.date || 
+                           new Date().toISOString().split('T')[0];
+
+      // Create VerifyVisitor from appointment data
       const newVerifyVisitor = new VerifyVisitor({
         appointmentId: appointment.appointmentId,
         visitorId: visitor.visitorId,
         name: `${appointment.firstname} ${appointment.lastname}`,
-        nic: visitor.nicNumber, // if nic is not available in appointment, skip or improve this
+        nic: visitor.nicNumber,
         vehicleNumber: appointment.vehicle,
         hostId: appointment.hostId.toString(),
         purpose: appointment.reason,
-        company: "N/A", // optional: get from Visitorsignup if needed
+        company: "N/A",
         status: "Awaiting Check-In",
-        date: appointment.response.date, // assuming response.date is available
+        date: dateForVerify,
       });
 
       await newVerifyVisitor.save();
