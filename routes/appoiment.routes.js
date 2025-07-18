@@ -10,6 +10,7 @@ import {
   visitorRejectAppointment,
   getAppointmentStatus,
   visitHistory,
+  selectTimeSlot,
 } from '../controllers/appoinment.controller.js';
 
 const router = express.Router();
@@ -24,5 +25,6 @@ router.put("/confirmAppointment/:appointmentId", confirmAppointment);
 router.put("/rejectAppointments/:appointmentId", visitorRejectAppointment); 
 router.get('/appointmentStatus/:visitorId', getAppointmentStatus);
 router.get('/visitHistory/:visitorId', visitHistory);
+router.put('/selectTimeSlot/:appointmentId', selectTimeSlot);
 
 export default router;
