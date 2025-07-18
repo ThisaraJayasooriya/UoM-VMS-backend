@@ -83,6 +83,23 @@ export const getDashboardInsights = async (req, res) => {
     // Total Registered Visitors
     const totalVisitors = await VisitorSignup.countDocuments();
 
+    // Visitor Distribution by category
+    const visitorDistribution = await Appointment.aggregate([
+      {
+        $match: {
+        status: "completed", // Only count completed visits
+        requestedAt: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $group: {
+        _id: "$category",
+        count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]);
+
     // Peak Hour from Activity collection
     const peakHourResult = await Activity.aggregate([
       {
@@ -115,6 +132,7 @@ export const getDashboardInsights = async (req, res) => {
       totalVisitors,
       peakHour,
       trend: fillDates,
+      visitorDistribution,
     });
   } catch (err) {
     console.error("getInsights error:", err);
