@@ -1,5 +1,6 @@
 import Appointment from "../models/Appoinment.js";
 import HostAvailability from "../models/HostAvailability.js";
+import sendEmail from "../utils/sendEmail.js";
 
 export const getAllAppointments = async (req, res) => {
   const hostId = req.params.hostId;
@@ -149,9 +150,10 @@ export const rescheduleAppointment = async (req, res) => {
     }
 
     // Get old time slot data for cleanup
-    const oldTimeSlotData = appointment.selectedTimeSlot && appointment.selectedTimeSlot.date
-      ? appointment.selectedTimeSlot
-      : appointment.response;
+    const oldTimeSlotData =
+      appointment.selectedTimeSlot && appointment.selectedTimeSlot.date
+        ? appointment.selectedTimeSlot
+        : appointment.response;
 
     // Update the appointment's response time slot
     appointment.response = {
@@ -162,7 +164,10 @@ export const rescheduleAppointment = async (req, res) => {
     };
 
     // Update selected time slot if it exists
-    if (appointment.selectedTimeSlot && Object.keys(appointment.selectedTimeSlot).length > 0) {
+    if (
+      appointment.selectedTimeSlot &&
+      Object.keys(appointment.selectedTimeSlot).length > 0
+    ) {
       appointment.selectedTimeSlot = {
         ...appointment.selectedTimeSlot,
         date,
@@ -172,14 +177,19 @@ export const rescheduleAppointment = async (req, res) => {
     }
 
     // Handle HostAvailability updates
-    if (oldTimeSlotData && oldTimeSlotData.date && oldTimeSlotData.startTime && oldTimeSlotData.endTime) {
+    if (
+      oldTimeSlotData &&
+      oldTimeSlotData.date &&
+      oldTimeSlotData.startTime &&
+      oldTimeSlotData.endTime
+    ) {
       // Free up the old time slot (mark as available or delete if it was created for this appointment)
       const oldSlot = await HostAvailability.findOne({
         hostId: appointment.hostId,
         date: oldTimeSlotData.date,
         startTime: oldTimeSlotData.startTime,
         endTime: oldTimeSlotData.endTime,
-        status: "booked"
+        status: "booked",
       });
 
       if (oldSlot) {
@@ -194,7 +204,7 @@ export const rescheduleAppointment = async (req, res) => {
       hostId: appointment.hostId,
       date: date,
       startTime: startTime,
-      endTime: endTime
+      endTime: endTime,
     });
 
     if (existingNewSlot) {
@@ -209,10 +219,13 @@ export const rescheduleAppointment = async (req, res) => {
         date: date,
         startTime: startTime,
         endTime: endTime,
-        status: "booked"
+        status: "booked",
       });
       await newSlot.save();
-      console.log("Created new booked slot for rescheduled appointment:", newSlot._id);
+      console.log(
+        "Created new booked slot for rescheduled appointment:",
+        newSlot._id
+      );
     }
 
     await appointment.save();
@@ -227,28 +240,40 @@ export const cancelAppointment = async (req, res) => {
   const { appointmentId } = req.params;
 
   try {
-    const appointment = await Appointment.findById(appointmentId);
+    const appointment = await Appointment.findById(appointmentId)
+      .populate("visitorId")
+      .populate("hostId", "name");
+
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
     // Get time slot data for cleanup
-    const timeSlotData = appointment.selectedTimeSlot && appointment.selectedTimeSlot.date
-      ? appointment.selectedTimeSlot
-      : appointment.response;
+    const timeSlotData =
+      appointment.selectedTimeSlot && appointment.selectedTimeSlot.date
+        ? appointment.selectedTimeSlot
+        : appointment.response;
 
     // Remove the booked time slot from HostAvailability
-    if (timeSlotData && timeSlotData.date && timeSlotData.startTime && timeSlotData.endTime) {
+    if (
+      timeSlotData &&
+      timeSlotData.date &&
+      timeSlotData.startTime &&
+      timeSlotData.endTime
+    ) {
       const bookedSlot = await HostAvailability.findOneAndDelete({
         hostId: appointment.hostId,
         date: timeSlotData.date,
         startTime: timeSlotData.startTime,
         endTime: timeSlotData.endTime,
-        status: "booked"
+        status: "booked",
       });
 
       if (bookedSlot) {
-        console.log("Deleted booked time slot from HostAvailability:", bookedSlot._id);
+        console.log(
+          "Deleted booked time slot from HostAvailability:",
+          bookedSlot._id
+        );
       } else {
         console.log("No matching booked slot found to delete");
       }
@@ -257,6 +282,42 @@ export const cancelAppointment = async (req, res) => {
     // Cancel the appointment
     appointment.status = "hostRejected";
     await appointment.save();
+
+    // Send email to the visitor
+    if (appointment.visitorId && appointment.visitorId.email) {
+      const visitorEmail = appointment.visitorId.email;
+      const visitorName = `${appointment.visitorId.firstName} ${appointment.visitorId.lastName}`;
+      const hostName = appointment.hostId?.name || "the host";
+      const appointmentDate = timeSlotData?.date || "N/A";
+
+      const emailContent = `
+        <h3>Hello ${visitorName},</h3>
+        <p>We regret to inform you that your appointment with <b>${hostName}</b> has been <span style="color:red;">cancelled</span>.</p>
+        <p><strong>Date:</strong> ${appointmentDate}</p>
+        <p><strong>Time:</strong> ${timeSlotData?.startTime || "N/A"} - ${
+        timeSlotData?.endTime || "N/A"
+      }</p>
+        <p><strong>Reason:</strong> ${appointment.reason || "Not specified"}</p>
+        <p>Please reschedule if needed. Sorry for the inconvenience.</p>
+      `;
+
+      console.log("Sending email to:", visitorEmail);
+      console.log("Email content:", emailContent);
+
+      try {
+        await sendEmail({
+          to: visitorEmail,
+          subject: "Appointment Cancelled",
+          html: emailContent,
+        });
+        console.log("Email sent successfully");
+      } catch (emailError) {
+        console.error("Failed to send email:", emailError);
+        // Don't fail the whole operation if email fails
+      }
+    } else {
+      console.log("No visitor email found, skipping email notification");
+    }
 
     res.status(200).json({ message: "Appointment canceled successfully" });
   } catch (error) {
