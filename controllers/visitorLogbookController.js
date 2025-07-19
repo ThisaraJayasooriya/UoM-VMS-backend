@@ -1,10 +1,26 @@
 import VerifyVisitor from '../models/VerifyVisitor.js';
 import VisitorSignup from '../models/VisitorSignup.js';
-import Staff from '../models/Staff.js'; // Import the Staff model
+import Staff from '../models/Staff.js';
 
 export const getVisitorLogbook = async (req, res) => {
   try {
-    const logEntries = await VerifyVisitor.find().lean();
+    const { startDate, endDate } = req.query;
+
+    // Default to yesterday to today if no dates provided
+    const start = startDate ? new Date(startDate) : new Date(new Date().setDate(new Date().getDate() - 1));
+    const end = endDate ? new Date(endDate) : new Date();
+
+    // Ensure end date includes the full day
+    end.setHours(23, 59, 59, 999);
+
+    const query = {
+      $or: [
+        { checkInTime: { $gte: start, $lte: end } },
+        { createdAt: { $gte: start, $lte: end } },
+      ],
+    };
+
+    const logEntries = await VerifyVisitor.find(query).lean();
 
     for (const entry of logEntries) {
       // Enrich email and name from VisitorSignup
@@ -38,11 +54,10 @@ export const getVisitorLogbook = async (req, res) => {
   }
 };
 
-// Update a logbook entry
 export const updateLogEntry = async (req, res) => {
   try {
-    const { id } = req.params; // visitorId from the URL
-    const updates = req.body; // Expecting fields like checkOutTime, status, host, purpose
+    const { id } = req.params;
+    const updates = req.body;
 
     const updatedEntry = await VerifyVisitor.findOneAndUpdate(
       { visitorId: id },
@@ -76,10 +91,9 @@ export const updateLogEntry = async (req, res) => {
   }
 };
 
-// Delete a logbook entry
 export const deleteLogEntry = async (req, res) => {
   try {
-    const { id } = req.params; // visitorId from the URL
+    const { id } = req.params;
 
     const deletedEntry = await VerifyVisitor.findOneAndDelete({ visitorId: id });
 
