@@ -4,7 +4,7 @@
     appointmentId: { type: String, unique: true },
     visitorId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Visitorsignup",
+      ref: "VisitorSignup",
       required: true,
     },
 
