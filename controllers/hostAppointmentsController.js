@@ -8,8 +8,9 @@ export const getAllAppointments = async (req, res) => {
   try {
     const appointments = await Appointment.find({
       hostId,
-      status: { $in: ["incompleted", "completed"] },
-    });
+      status: { $in: ["Incompleted", "Completed"] },
+    })
+    .populate("visitorId", "visitorId")
 
     res.status(200).json(appointments);
   } catch (error) {
