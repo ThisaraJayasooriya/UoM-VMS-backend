@@ -140,22 +140,78 @@ export const getConfirmedAppointmentsCount = async (req, res) => {
   }
 };
 
+// PATCH: Reschedule an appointment
 export const rescheduleAppointment = async (req, res) => {
+  const { appointmentId } = req.params;
+  const { date, startTime, endTime } = req.body; // Changed from newTimeSlot to individual fields
+
   try {
-    const { appointmentId } = req.params;
-    const { date, startTime, endTime } = req.body;
-    const appointment = await Appointment.findById(appointmentId);
+    // Validate input
+    if (!date || !startTime || !endTime) {
+      return res.status(400).json({ message: "Date, startTime, and endTime are required" });
+    }
+
+    const appointment = await Appointment.findById(appointmentId)
+      .populate("visitorId")
+      .populate("hostId", "name");
+    
     if (!appointment) {
       return res.status(404).json({ message: "Appointment not found" });
     }
 
-    // Get old time slot data for cleanup
+    // ✅ CAPTURE OLD TIME SLOT DATA IMMEDIATELY (before any updates)
     const oldTimeSlotData =
       appointment.selectedTimeSlot && appointment.selectedTimeSlot.date
         ? appointment.selectedTimeSlot
         : appointment.response;
 
-    // Update the appointment's response time slot
+    if (!oldTimeSlotData || !oldTimeSlotData.date) {
+      return res.status(400).json({ message: "No existing time slot found to reschedule" });
+    }
+
+    // ✅ SAVE OLD VALUES IMMEDIATELY (before updating appointment)
+    const oldDate = oldTimeSlotData.date;
+    const oldStartTime = oldTimeSlotData.startTime;
+    const oldEndTime = oldTimeSlotData.endTime;
+
+    const hostId = appointment.hostId._id;
+
+    console.log("Attempting to delete old slot with:");
+    console.log({
+      hostId,
+      date: oldDate,
+      startTime: oldStartTime,
+      endTime: oldEndTime,
+      status: "booked"
+    });
+
+    // Delete old slot from HostAvailability
+    const deleted = await HostAvailability.findOneAndDelete({
+      hostId,
+      date: oldDate,
+      startTime: oldStartTime,
+      endTime: oldEndTime,
+      status: "booked"
+    });
+
+    if (deleted) {
+      console.log("Old booked slot deleted successfully:", deleted._id);
+    } else {
+      console.log("No matching booked slot found to delete");
+    }
+
+    // Create new booked slot
+    const newSlot = new HostAvailability({
+      hostId,
+      date,
+      startTime,
+      endTime,
+      status: "booked"
+    });
+    await newSlot.save();
+    console.log("Created new booked slot for rescheduled appointment:", newSlot._id);
+
+    // Update appointment with new time slot
     appointment.response = {
       ...appointment.response,
       date,
@@ -164,10 +220,7 @@ export const rescheduleAppointment = async (req, res) => {
     };
 
     // Update selected time slot if it exists
-    if (
-      appointment.selectedTimeSlot &&
-      Object.keys(appointment.selectedTimeSlot).length > 0
-    ) {
+    if (appointment.selectedTimeSlot && Object.keys(appointment.selectedTimeSlot).length > 0) {
       appointment.selectedTimeSlot = {
         ...appointment.selectedTimeSlot,
         date,
@@ -176,63 +229,78 @@ export const rescheduleAppointment = async (req, res) => {
       };
     }
 
-    // Handle HostAvailability updates
-    if (
-      oldTimeSlotData &&
-      oldTimeSlotData.date &&
-      oldTimeSlotData.startTime &&
-      oldTimeSlotData.endTime
-    ) {
-      // Free up the old time slot (mark as available or delete if it was created for this appointment)
-      const oldSlot = await HostAvailability.findOne({
-        hostId: appointment.hostId,
-        date: oldTimeSlotData.date,
-        startTime: oldTimeSlotData.startTime,
-        endTime: oldTimeSlotData.endTime,
-        status: "booked",
-      });
+    await appointment.save();
 
-      if (oldSlot) {
-        oldSlot.status = "available";
-        await oldSlot.save();
-        console.log("Freed up old time slot:", oldSlot._id);
+    // Prepare email content using pre-saved old values
+    const visitorName = appointment.visitorId.firstName && appointment.visitorId.lastName 
+      ? `${appointment.visitorId.firstName} ${appointment.visitorId.lastName}`
+      : appointment.visitorId.email;
+    const hostName = appointment.hostId?.name || "the host";
+    const oldTime = `${oldStartTime} - ${oldEndTime}`;
+    const newTime = `${startTime} - ${endTime}`;
+
+    const emailContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333; text-align: center;">Appointment Rescheduled</h2>
+        
+        <h3>Hello ${visitorName},</h3>
+        <p>Your appointment with <b>${hostName}</b> has been <span style="color: #ff9800; font-weight: bold;">rescheduled</span>.</p>
+        
+        <div style="background-color: #ffebee; padding: 15px; border-left: 4px solid #f44336; margin: 20px 0;">
+          <h4 style="color: #d32f2f; margin-top: 0;">Previous Schedule:</h4>
+          <p><strong>Date:</strong> ${oldDate}</p>
+          <p><strong>Time:</strong> ${oldTime}</p>
+        </div>
+
+        <div style="background-color: #e8f5e8; padding: 15px; border-left: 4px solid #4caf50; margin: 20px 0;">
+          <h4 style="color: #2e7d32; margin-top: 0;">New Schedule:</h4>
+          <p><strong>Date:</strong> ${date}</p>
+          <p><strong>Time:</strong> ${newTime}</p>
+        </div>
+
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Appointment ID:</strong> ${appointment.appointmentId}</p>
+          <p><strong>Purpose:</strong> ${appointment.reason || "Not specified"}</p>
+          <p><strong>Host:</strong> ${hostName}</p>
+        </div>
+        
+        <p><strong>Important:</strong> Please make note of your new appointment date and time.</p>
+        
+        <p>Thank you for your understanding.</p>
+        
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+        <p style="font-size: 12px; color: #666; text-align: center;">
+          This is an automated email from UoM Visitor Management System.<br>
+          Please do not reply to this email.
+        </p>
+      </div>
+    `;
+
+    // Send email notification
+    if (appointment.visitorId && appointment.visitorId.email) {
+      try {
+        await sendEmail({
+          to: appointment.visitorId.email,
+          subject: "Appointment Rescheduled - New Date and Time",
+          html: emailContent,
+        });
+        console.log("Reschedule notification email sent successfully to:", appointment.visitorId.email);
+      } catch (emailError) {
+        console.error("Failed to send reschedule notification email:", emailError);
+        // Don't fail the whole operation if email fails
       }
+    } else {
+      console.log("No visitor email found, skipping email notification");
     }
 
-    // Book the new time slot
-    const existingNewSlot = await HostAvailability.findOne({
-      hostId: appointment.hostId,
-      date: date,
-      startTime: startTime,
-      endTime: endTime,
+    return res.status(200).json({ 
+      message: "Appointment rescheduled successfully", 
+      appointment 
     });
 
-    if (existingNewSlot) {
-      // Update existing slot status to "booked"
-      existingNewSlot.status = "booked";
-      await existingNewSlot.save();
-      console.log("Updated new slot to booked:", existingNewSlot._id);
-    } else {
-      // Create new slot with "booked" status
-      const newSlot = new HostAvailability({
-        hostId: appointment.hostId,
-        date: date,
-        startTime: startTime,
-        endTime: endTime,
-        status: "booked",
-      });
-      await newSlot.save();
-      console.log(
-        "Created new booked slot for rescheduled appointment:",
-        newSlot._id
-      );
-    }
-
-    await appointment.save();
-    res.status(200).json(appointment);
   } catch (error) {
     console.error("Error rescheduling appointment:", error);
-    res.status(500).json({ message: "Error rescheduling appointment", error });
+    return res.status(500).json({ message: "Server error during rescheduling", error: error.message });
   }
 };
 
