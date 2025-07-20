@@ -22,10 +22,10 @@ const task = cron.schedule("0 0 * * *", async () => {
       const responseDateStr = appointment.response.date;
 
       if (responseDateStr < todayStr) {
-        appointment.status = "incompleted";
+        appointment.status = "Incompleted";
         await appointment.save();
         updatedCount++;
-        console.log(`✅ Appointment ${appointment._id} updated to 'incompleted'`);
+        console.log(`✅ Appointment ${appointment._id} updated to 'Incompleted'`);
       }
     }
 
