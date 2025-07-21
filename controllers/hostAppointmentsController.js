@@ -99,7 +99,7 @@ export const getConfirmedAppointments = async (req, res) => {
     const appointments = await Appointment.find({
       hostId,
       status: "confirmed",
-    });
+    }).populate("visitorId", "email");
 
     res.status(200).json(appointments);
   } catch (error) {
