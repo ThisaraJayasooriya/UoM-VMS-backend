@@ -8,7 +8,10 @@ export const getVisitorHistoryReport = async (req, res) => {
     console.log('Query params:', { searchQuery, selectedDate }); // Debug query params
 
     // Fetch checked-in visitors
-    let query = { checkInTime: { $ne: null } };
+    let query = { 
+      checkInTime: { $ne: null },
+      status: { $in: ["Checked-In", "Checked-Out"] } // Only include visitors who have checked in or out
+    };
 
     // Apply search filter
     if (searchQuery) {
