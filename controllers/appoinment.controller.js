@@ -293,7 +293,7 @@ export const getAppointmentStatus = async (req, res) => {
     const visitorId = req.params.visitorId;
     const appointments = await Appointment.find({
       visitorId: visitorId,
-      status: { $in: ["completed", "confirmed", "accepted", "visitorRejected", "pending", "rejected"] }
+      status: { $in: ["Completed", "confirmed", "accepted", "visitorRejected", "pending", "rejected"] }
     }).populate("hostId", "name email faculty department");
     
     // Format the response to include more readable host information
@@ -334,7 +334,7 @@ export const visitHistory = async (req, res) => {
     // Find appointments with "completed" status for the given visitorId
     const completedAppointments = await Appointment.find({
       visitorId: visitorId,
-      status: "completed"
+      status: "Completed"
     })
     .populate("hostId", "name email faculty department")
     .sort({ updatedAt: -1 }); // Sort by most recent first
