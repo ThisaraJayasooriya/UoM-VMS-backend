@@ -4,7 +4,7 @@
     appointmentId: { type: String, unique: true },
     visitorId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Visitorsignup",
+      ref: "VisitorSignup",
       required: true,
     },
 
@@ -20,7 +20,7 @@
     requestedAt: { type: Date, default: Date.now },
     status: {
       type: String,
-      enum: ["pending", "accepted", "rejected" , "confirmed", "visitorRejected", "completed", "incompleted"],
+      enum: ["pending", "accepted", "rejected" , "confirmed", "visitorRejected", "hostRejected", "Completed", "Incompleted"],
       default: "pending",
     },
     response: {
@@ -28,6 +28,18 @@
       startTime: String,
       endTime: String,
       responseType: String, // "allSlots" or "exactSlot"
+    },
+    availableTimeSlots: [{
+      slotId: String,
+      date: String,
+      startTime: String,
+      endTime: String,
+    }],
+    selectedTimeSlot: {
+      slotId: String,
+      date: String,
+      startTime: String,
+      endTime: String,
     },
   });
 

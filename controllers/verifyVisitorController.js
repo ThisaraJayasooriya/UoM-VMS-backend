@@ -59,7 +59,7 @@ export const checkInVisitor = async (req, res) => {
     // Update appointment status to "completed"
     await Appointment.findOneAndUpdate(
       { appointmentId },
-      { status: "completed" }
+      { status: "Completed" }
     );
 
 

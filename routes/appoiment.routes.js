@@ -10,6 +10,7 @@ import {
   visitorRejectAppointment,
   getAppointmentStatus,
   visitHistory,
+  selectTimeSlot,
 } from '../controllers/appoinment.controller.js';
 import { getTodayAppointmentsCount } from "../controllers/appoinment.controller.js";
 
@@ -25,7 +26,7 @@ router.put("/confirmAppointment/:appointmentId", confirmAppointment);
 router.put("/rejectAppointments/:appointmentId", visitorRejectAppointment); 
 router.get('/appointmentStatus/:visitorId', getAppointmentStatus);
 router.get('/visitHistory/:visitorId', visitHistory);
-// ✅ Route for today’s appointment count
 router.get("/today/count", getTodayAppointmentsCount);
+router.put('/selectTimeSlot/:appointmentId', selectTimeSlot);
 
 export default router;
