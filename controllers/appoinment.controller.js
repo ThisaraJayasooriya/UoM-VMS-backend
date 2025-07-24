@@ -390,6 +390,26 @@ export const visitHistory = async (req, res) => {
   }
 };
 
+
+// ✅ Get today's appointments count
+export const getTodayAppointmentsCount = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const todayCount = await Appointment.countDocuments({
+      requestedAt: { $gte: today, $lt: tomorrow },
+    });
+
+    res.status(200).json({ todayAppointments: todayCount });
+  } catch (error) {
+    console.error("Error counting today's appointments:", error);
+     res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Select time slot from available slots
 export const selectTimeSlot = async (req, res) => {
   try {

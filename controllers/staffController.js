@@ -255,8 +255,39 @@ export const blockUser = async (req, res) => {
     }
 
     await createNotification(`User ${user.name || user.email} was blocked for: ${reason}`, "block");
+    // Send email notification to the blocked user
+    const baseUrl = process.env.FRONTEND_URL && process.env.FRONTEND_URL !== "undefined" ? process.env.FRONTEND_URL : 'http://localhost:5173';
+    const contactSupportUrl = `${baseUrl}/contact`;
+    console.log("Generated contactSupportUrl:", contactSupportUrl);
+    const emailContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #124E66;">Account Blocked Notification</h2>
+        <p>Dear ${user.name || `${user.firstName} ${user.lastName}`},</p>
+        <p>Your account with the University of Moratuwa Visitor Management System has been blocked.</p>
+        <p><strong>Reason:</strong> ${reason}</p>
+        <p><strong>Email:</strong> ${user.email}</p>
+        <p><strong>Role:</strong> ${role.charAt(0).toUpperCase() + role.slice(1)}</p>
+        <p>If you believe this is a mistake, please contact our support team to resolve the issue.</p>
+        <p style="margin-top: 20px;">
+          <a href="${contactSupportUrl}" style="background-color: #124E66; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Contact Support</a>
+        </p>
+        <p style="font-size: 12px; color: #748D92; margin-top: 20px;">
+          This action was taken on ${new Date().toLocaleString("en-US", { timeZone: "Asia/Colombo" })}.
+        </p>
+        <p style="font-size: 12px; color: #748D92;">
+          © ${new Date().getFullYear()} University of Moratuwa. All rights reserved.
+        </p>
+      </div>
+    `;
+    const emailResult = await sendEmail({
+      to: user.email,
+      subject: "Your Account Has Been Blocked",
+      html: emailContent,
+    });
 
-
+    if (!emailResult.success) {
+      console.warn(`Failed to send block notification to ${user.email}: ${emailResult.error}`);
+    }
      res.status(200).json({ success: true, message: "User blocked successfully", data: blockedUser });
   } catch (error) {
     res.status(500).json({ success: false, message: "Failed to block user", error: error.message });
@@ -293,3 +324,4 @@ export const unblockUser = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to unblock user", error: error.message });
   }
 };
+
