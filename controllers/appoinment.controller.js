@@ -293,7 +293,7 @@ export const getAppointmentStatus = async (req, res) => {
     const visitorId = req.params.visitorId;
     const appointments = await Appointment.find({
       visitorId: visitorId,
-      status: { $in: ["completed", "confirmed", "accepted", "visitorRejected", "pending", "rejected"] }
+      status: { $in: ["Completed", "confirmed", "accepted", "visitorRejected", "pending", "rejected"] }
     }).populate("hostId", "name email faculty department");
     
     // Format the response to include more readable host information
@@ -334,7 +334,7 @@ export const visitHistory = async (req, res) => {
     // Find appointments with "completed" status for the given visitorId
     const completedAppointments = await Appointment.find({
       visitorId: visitorId,
-      status: "completed"
+      status: "Completed"
     })
     .populate("hostId", "name email faculty department")
     .sort({ updatedAt: -1 }); // Sort by most recent first
@@ -387,6 +387,26 @@ export const visitHistory = async (req, res) => {
   } catch (error) {
     console.error("Error fetching visit history:", error);
     res.status(500).json({ message: "Error fetching visit history", error });
+  }
+};
+
+
+// ✅ Get today's appointments count
+export const getTodayAppointmentsCount = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const todayCount = await Appointment.countDocuments({
+      requestedAt: { $gte: today, $lt: tomorrow },
+    });
+
+    res.status(200).json({ todayAppointments: todayCount });
+  } catch (error) {
+    console.error("Error counting today's appointments:", error);
+     res.status(500).json({ message: "Server error" });
   }
 };
 

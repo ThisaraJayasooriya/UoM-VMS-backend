@@ -119,6 +119,7 @@ export const signupVisitor = async (req, res) => {
       nicNumber: nationality === "Sri Lankan" ? nicNumber : undefined,
       passportNumber: nationality === "Foreigner" ? passportNumber : undefined,
       password, // Let the model handle the hashing
+      status: "active",
     });
 
 

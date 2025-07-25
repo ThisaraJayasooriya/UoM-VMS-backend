@@ -1,5 +1,6 @@
 import express from "express";
 import { getConfirmedAppointmentsCount, getConfirmedAppointments, getPendingAppointments, getPendingAppointmentsCount, updateAppointmentStatus, getAllAppointments, rescheduleAppointment, cancelAppointment } from "../controllers/hostAppointmentsController.js";
+import { reportVisitor } from "../controllers/visitorReportController.js";
 
 
 const router = express.Router();
@@ -19,5 +20,7 @@ router.get("/host/:hostId/all", getAllAppointments);
 router.put("/reschedule/:appointmentId", rescheduleAppointment);
 
 router.put("/cancel/:appointmentId", cancelAppointment);
+
+router.post("/reportVisitor", reportVisitor);
 
 export default router;
