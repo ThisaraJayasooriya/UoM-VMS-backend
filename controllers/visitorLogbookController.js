@@ -4,27 +4,47 @@ import Staff from '../models/Staff.js';
 
 export const getVisitorLogbook = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, page = 1, limit = 5 } = req.query;
+
+    // Validate date inputs
+    if (startDate && isNaN(Date.parse(startDate))) {
+      return res.status(400).json({ message: 'Invalid start date' });
+    }
+    if (endDate && isNaN(Date.parse(endDate))) {
+      return res.status(400).json({ message: 'Invalid end date' });
+    }
 
     // Default to yesterday to today if no dates provided
-    const start = startDate ? new Date(startDate) : new Date(new Date().setDate(new Date().getDate() - 1));
+    const start = startDate ? new Date(startDate) : new Date(new Date().setDate(new Date().getUTCDate() - 1));
     const end = endDate ? new Date(endDate) : new Date();
 
-    // Ensure end date includes the full day
-    end.setHours(23, 59, 59, 999);
+    // Normalize dates to UTC
+    start.setUTCHours(0, 0, 0, 0);
+    end.setUTCHours(23, 59, 59, 999);
+
+    console.log('Querying logs with start:', start.toISOString(), 'end:', end.toISOString());
 
     const query = {
       $or: [
         { checkInTime: { $gte: start, $lte: end } },
-        { createdAt: { $gte: start, $lte: end } },
+        { checkInTime: null, createdAt: { $gte: start, $lte: end } },
       ],
     };
 
-    const logEntries = await VerifyVisitor.find(query).lean();
+    const skip = (page - 1) * limit;
+    const logEntries = await VerifyVisitor.find(query).lean().skip(skip).limit(parseInt(limit));
+    const total = await VerifyVisitor.countDocuments(query);
+
+    console.log('Found log entries:', logEntries.length, 'Total:', total);
+    console.log('Log entries details:', logEntries.map(e => ({
+      visitorId: e.visitorId,
+      checkInTime: e.checkInTime,
+      createdAt: e.createdAt,
+    })));
 
     for (const entry of logEntries) {
       // Enrich email and name from VisitorSignup
-      const signup = await VisitorSignup.findOne({ visitorId: entry.visitorId });
+      const signup = await VisitorSignup.findOne({ visitorId: entry.visitorId }).lean();
       entry.email = signup ? signup.email : '';
       if (!entry.name || entry.name.trim() === '') {
         entry.name = signup ? `${signup.firstName} ${signup.lastName}` : entry.name || 'Unknown';
@@ -43,50 +63,13 @@ export const getVisitorLogbook = async (req, res) => {
 
       // Map fields for frontend compatibility
       entry.purpose = entry.purpose || 'Not Specified';
-      entry.checkIn = entry.checkInTime || null;
-      entry.checkOut = entry.checkOutTime || null;
+      entry.checkInTime = entry.checkInTime || null;
+      entry.checkOutTime = entry.checkOutTime || null;
     }
 
-    res.json(logEntries);
+    res.json({ logEntries, total });
   } catch (error) {
     console.error('Error fetching visitor logbook:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-export const updateLogEntry = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
-
-    const updatedEntry = await VerifyVisitor.findOneAndUpdate(
-      { visitorId: id },
-      { $set: updates },
-      { new: true, runValidators: true, lean: true }
-    );
-
-    if (!updatedEntry) {
-      return res.status(404).json({ message: 'Entry not found' });
-    }
-
-    // Sync email and name from VisitorSignup
-    const signup = await VisitorSignup.findOne({ visitorId: id });
-    updatedEntry.email = signup ? signup.email : updatedEntry.email || '';
-    if (!updatedEntry.name || updatedEntry.name.trim() === '') {
-      updatedEntry.name = signup ? `${signup.firstName} ${signup.lastName}` : updatedEntry.name || 'Unknown';
-    }
-
-    // Resolve hostId to host name
-    if (updatedEntry.hostId) {
-      const staff = await Staff.findById(updatedEntry.hostId).lean();
-      updatedEntry.host = staff ? staff.name : 'Not Assigned';
-    } else {
-      updatedEntry.host = 'Not Assigned';
-    }
-
-    res.json(updatedEntry);
-  } catch (error) {
-    console.error('Error updating logbook entry:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
