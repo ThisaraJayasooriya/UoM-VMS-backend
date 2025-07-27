@@ -50,20 +50,6 @@ export const updateAppointmentStatus = async (req, res) => {
 
     if (responseType === "allSlots") {
       // Get host's available time slots
-      const hostSlots = await HostAvailability.find({
-        hostId: appointment.hostId,
-        status: "available",
-        date: { $gte: new Date().toISOString().split("T")[0] }, // Future dates only
-      });
-
-      // Store available slots in appointment
-      appointment.availableTimeSlots = hostSlots.map((slot, index) => ({
-        slotId: `slot_${Date.now()}_${index}`,
-        date: slot.date,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-      }));
-
       appointment.response = {
         responseType: "allSlots",
       };
