@@ -73,20 +73,3 @@ export const getVisitorLogbook = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
-export const deleteLogEntry = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const deletedEntry = await VerifyVisitor.findOneAndDelete({ visitorId: id });
-
-    if (!deletedEntry) {
-      return res.status(404).json({ message: 'Entry not found' });
-    }
-
-    res.json({ message: 'Entry deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting logbook entry:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
