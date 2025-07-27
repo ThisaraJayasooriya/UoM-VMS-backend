@@ -24,11 +24,15 @@ const visitorReportSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-    visitorId:{
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
+    visitorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
     },
     visitorName: {
+      type: String,
+      required: true,
+    },
+    visitorEmail: {
       type: String,
       required: true,
     },
