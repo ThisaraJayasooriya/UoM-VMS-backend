@@ -146,6 +146,21 @@ export const getAcceptedAppointment = async (req, res) => {
       return res.status(404).json({ message: "No accepted appointment found" });
     }
 
+    const hostSlots = await HostAvailability.find({
+        hostId: appointment.hostId,
+        status: "available",
+        date: { $gte: new Date().toISOString().split("T")[0] }, // Future dates only
+      });
+
+      // Store available slots in appointment
+      appointment.availableTimeSlots = hostSlots.map((slot, index) => ({
+        slotId: `slot_${Date.now()}_${index}`,
+        date: slot.date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+      }));
+      await appointment.save();
+
     res.status(200).json(appointment);
   } catch (error) {
     res.status(500).json({ message: "Server error", error });
@@ -406,6 +421,7 @@ export const selectTimeSlot = async (req, res) => {
     if (appointment.response.responseType !== "allSlots") {
       return res.status(400).json({ message: "This appointment doesn't have multiple slots" });
     }
+
 
     // Find the selected slot
     const selectedSlot = appointment.availableTimeSlots.find(
