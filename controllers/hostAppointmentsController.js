@@ -25,7 +25,7 @@ export const getPendingAppointments = async (req, res) => {
     const appointments = await Appointment.find({
       hostId,
       status: "pending",
-    });
+    }).sort({ requestedAt: -1 });
 
     res.status(200).json(appointments);
   } catch (error) {
