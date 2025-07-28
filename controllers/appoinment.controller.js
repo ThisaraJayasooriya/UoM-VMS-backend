@@ -310,9 +310,9 @@ export const getAppointmentStatus = async (req, res) => {
       visitorId: visitorId,
       status: { $in: ["Completed", "confirmed", "accepted", "visitorRejected", "pending", "rejected"] }
     }).populate("hostId", "name email faculty department");
-    
+
     // Format the response to include more readable host information
-    const formattedAppointments = appointments.map(appointment => {
+    const formattedAppointments = await Promise.all(appointments.map(async (appointment) => {
       const formattedAppointment = appointment.toObject();
       
       // Add host name as a separate property if hostId exists
@@ -329,15 +329,42 @@ export const getAppointmentStatus = async (req, res) => {
         formattedAppointment.startTime = formattedAppointment.response.startTime || "";
         formattedAppointment.endTime = formattedAppointment.response.endTime || "";
       }
+
+      // Fetch check-in time from VerifyVisitor model
+      try {
+        const verifyVisitor = await VerifyVisitor.findOne({
+          appointmentId: formattedAppointment.appointmentId
+        });
+
+        if (verifyVisitor) {
+          formattedAppointment.checkInTime = verifyVisitor.checkInTime || null;
+          formattedAppointment.checkOutTime = verifyVisitor.checkOutTime || null;
+          formattedAppointment.verifyVisitorStatus = verifyVisitor.status || null;
+          
+          // Format check-in time for display
+          if (verifyVisitor.checkInTime) {
+            formattedAppointment.formattedCheckInTime = new Date(verifyVisitor.checkInTime).toLocaleString();
+          }
+          
+          // Format check-out time for display
+          if (verifyVisitor.checkOutTime) {
+            formattedAppointment.formattedCheckOutTime = new Date(verifyVisitor.checkOutTime).toLocaleString();
+          }
+        }
+      } catch (verifyError) {
+        console.error("Error fetching VerifyVisitor data for appointment:", formattedAppointment.appointmentId, verifyError);
+        // Continue without VerifyVisitor data if there's an error
+        formattedAppointment.checkInTime = null;
+        formattedAppointment.checkOutTime = null;
+      }
       
       return formattedAppointment;
-    });
+    }));
     
     res.status(200).json(formattedAppointments);
   } catch (error) {
     console.error("Error fetching appointments:", error);
     res.status(500).json({ message: "Error fetching appointments", error });
-
   }
 };
 
