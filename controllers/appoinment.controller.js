@@ -5,6 +5,32 @@ import { getNextSequence } from "../utils/getNextSequence.js";
 import VisitorSignup from "../models/VisitorSignup.js";
 import HostAvailability from "../models/HostAvailability.js";
 
+// Get visitor details for auto-filling appointment form
+export const getVisitorDetailsById = async (req, res) => {
+  try {
+    const { visitorId } = req.params;
+    
+    // Find visitor by ID
+    const visitor = await VisitorSignup.findById(visitorId);
+    
+    if (!visitor) {
+      return res.status(404).json({ message: "Visitor not found" });
+    }
+    
+    // Return only the details needed for auto-fill
+    const visitorDetails = {
+      firstname: visitor.firstName,
+      lastname: visitor.lastName,
+      contact: visitor.phoneNumber
+    };
+    
+    res.status(200).json(visitorDetails);
+  } catch (error) {
+    console.error("Error fetching visitor details:", error);
+    res.status(500).json({ message: "Error fetching visitor details", error: error.message });
+  }
+};
+
 // Create appointment
 export const makeAppoinment = async (req, res) => {
   console.log("Received request to create appointment:", req.body);
