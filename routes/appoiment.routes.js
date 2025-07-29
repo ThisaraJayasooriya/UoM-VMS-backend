@@ -11,6 +11,7 @@ import {
   getAppointmentStatus,
   visitHistory,
   selectTimeSlot,
+  getVisitorDetailsById,
 } from '../controllers/appoinment.controller.js';
 import { getTodayAppointmentsCount } from "../controllers/appoinment.controller.js";
 
@@ -28,5 +29,6 @@ router.get('/appointmentStatus/:visitorId', getAppointmentStatus);
 router.get('/visitHistory/:visitorId', visitHistory);
 router.get("/today/count", getTodayAppointmentsCount);
 router.put('/selectTimeSlot/:appointmentId', selectTimeSlot);
+router.get('/visitor-details/:visitorId', getVisitorDetailsById);
 
 export default router;
