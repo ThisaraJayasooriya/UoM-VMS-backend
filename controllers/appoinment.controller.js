@@ -4,6 +4,7 @@ import Staff from "../models/Staff.js";
 import { getNextSequence } from "../utils/getNextSequence.js";
 import VisitorSignup from "../models/VisitorSignup.js";
 import HostAvailability from "../models/HostAvailability.js";
+import sendEmail from "../utils/sendEmail.js";
 
 // Get visitor details for auto-filling appointment form
 export const getVisitorDetailsById = async (req, res) => {
@@ -289,9 +290,70 @@ export const confirmAppointment = async (req, res) => {
         company: "N/A",
         status: "Awaiting Check-In",
         date: dateForVerify,
+      });      await newVerifyVisitor.save();
+    }
+
+    // Send simple email with appointment ID
+    const emailContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #124E66, #2E8BC0); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="margin: 0; font-size: 28px;">Appointment Confirmed!</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">University of Moratuwa - Visitor Management System</p>
+        </div>
+        
+        <div style="background: white; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+          <h2 style="color: #124E66; margin-top: 0;">Hello ${appointment.firstname} ${appointment.lastname},</h2>
+          
+          <p style="font-size: 16px; line-height: 1.6; color: #333;">
+            Your appointment has been confirmed! Please save your appointment ID for check-in:
+          </p>
+          
+          <div style="background: #f8f9fa; border: 2px solid #2E8BC0; padding: 30px; margin: 25px 0; border-radius: 10px; text-align: center;">
+            <h3 style="color: #124E66; margin-top: 0; margin-bottom: 15px; font-size: 18px;">📋 Your Appointment ID</h3>
+            <div style="background: #124E66; color: white; padding: 20px; border-radius: 8px; font-size: 24px; font-weight: bold; letter-spacing: 2px;">
+              ${appointment.appointmentId}
+            </div>
+          </div>
+          
+          <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 8px; margin: 25px 0;">
+            <h4 style="color: #856404; margin-top: 0; margin-bottom: 15px;">⚠️ Important Check-in Instructions:</h4>
+            <ul style="color: #856404; margin: 0; padding-left: 20px; line-height: 1.8;">
+              <li><strong>Present this Appointment ID to the security person when checking in</strong></li>
+              <li>Bring a valid ID for verification</li>
+              <li>Arrive 10-15 minutes early</li>
+            </ul>
+          </div>
+          
+          <p style="font-size: 16px; line-height: 1.6; color: #333; margin-bottom: 30px;">
+            Thank you for using UoM Visitor Management System. We look forward to your visit!
+          </p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 0 0 10px 10px; text-align: center; border: 1px solid #e0e0e0; border-top: none;">
+          <p style="margin: 0; font-size: 12px; color: #666;">
+            This is an automated email. Please do not reply to this message.<br>
+            University of Moratuwa - Visitor Management System
+          </p>
+        </div>
+      </div>
+    `;
+
+    // Send confirmation email with appointment ID
+    try {
+      const emailResult = await sendEmail({
+        to: visitor.email,
+        subject: `Appointment ID: ${appointment.appointmentId} - Please Save for Check-in`,
+        html: emailContent
       });
 
-      await newVerifyVisitor.save();
+      if (emailResult.success) {
+        console.log(`Appointment ID email sent successfully to ${visitor.email}`);
+      } else {
+        console.error("Failed to send appointment ID email:", emailResult.message);
+      }
+    } catch (emailError) {
+      console.error("Error sending appointment ID email:", emailError);
+      // Don't fail the appointment confirmation if email fails
     }
 
     res
