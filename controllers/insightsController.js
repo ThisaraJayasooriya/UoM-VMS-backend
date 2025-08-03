@@ -27,7 +27,7 @@ export const getDashboardInsights = async (req, res) => {
       startDate.setHours(0, 0, 0, 0);
     } else if (range === "month") {
       startDate = new Date(now);
-      startDate.setDate(1);
+      startDate.setDate(now.getDate() - 29);
       startDate.setHours(0, 0, 0, 0);
     } else {
       return res.status(400).json({ error: "Invalid range parameter" });
