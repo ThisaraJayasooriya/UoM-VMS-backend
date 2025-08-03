@@ -88,7 +88,7 @@ export const getDashboardInsights = async (req, res) => {
     const visitorDistribution = await Appointment.aggregate([
       {
         $match: {
-        status: "completed", // Only count completed visits
+        status: "Completed", // Only count completed visits
         requestedAt: { $gte: startDate, $lte: endDate },
         },
       },
@@ -129,7 +129,7 @@ export const getDashboardInsights = async (req, res) => {
 
     // Live Monitoring
     const scheduledCount = await Appointment.countDocuments({
-      status: "completed",
+      status: "Completed",
       requestedAt: { $gte: startDate, $lte: now },
     });
 
