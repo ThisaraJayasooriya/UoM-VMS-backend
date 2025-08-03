@@ -27,7 +27,7 @@ export const getDashboardInsights = async (req, res) => {
       startDate.setHours(0, 0, 0, 0);
     } else if (range === "month") {
       startDate = new Date(now);
-      startDate.setDate(1);
+      startDate.setDate(now.getDate() - 29);
       startDate.setHours(0, 0, 0, 0);
     } else {
       return res.status(400).json({ error: "Invalid range parameter" });
@@ -88,7 +88,7 @@ export const getDashboardInsights = async (req, res) => {
     const visitorDistribution = await Appointment.aggregate([
       {
         $match: {
-        status: "completed", // Only count completed visits
+        status: "Completed", // Only count completed visits
         requestedAt: { $gte: startDate, $lte: endDate },
         },
       },
@@ -101,35 +101,37 @@ export const getDashboardInsights = async (req, res) => {
       { $sort: { count: -1 } },
     ]);
 
-    // Peak Hour from Activity collection
-    const peakHourResult = await Activity.aggregate([
-      {
-        $match: {
-          timestamp: { $gte: startDate, $lte: endDate },
+        // Peak Hour from Appointment collection using response.startTime (status="Completed")
+      const peakHourResult = await Appointment.aggregate([
+        {
+          $match: {
+            status: "Completed",
+            requestedAt: { $gte: startDate, $lte: endDate }, // filter by date range
+            "response.startTime": { $exists: true, $ne: null }
+          },
         },
-      },
-      {
-        $project: {
-          hour: { $hour: "$timestamp" },
+        {
+          $project: {
+            // Extract hour as integer from "HH:mm" string
+            hour: { $toInt: { $substr: ["$response.startTime", 0, 2] } }
+          },
         },
-      },
-      {
-        $group: {
-          _id: "$hour",
-          count: { $sum: 1 },
+        {
+          $group: {
+            _id: "$hour",
+            count: { $sum: 1 },
+          },
         },
-      },
-      { $sort: { count: -1 } },
-      { $limit: 1 },
-    ]);
+        { $sort: { count: -1 } },
+        { $limit: 1 },
+      ]);
 
-    const peakHour = peakHourResult[0]
-      ? formatHourToAMPM(peakHourResult[0]._id)
-      : "N/A";
-
+      const peakHour = peakHourResult[0]
+        ? formatHourToAMPM(peakHourResult[0]._id)
+        : "N/A";
     // Live Monitoring
     const scheduledCount = await Appointment.countDocuments({
-      status: "completed",
+      status: "Completed",
       requestedAt: { $gte: startDate, $lte: now },
     });
 
