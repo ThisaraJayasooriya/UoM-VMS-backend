@@ -19,6 +19,7 @@ const staffSchema = new mongoose.Schema({
   },
   role: { type: String, required: true, lowercase: true, trim: true },
   userID: { type: String, required: true, trim: true, unique: true },
+  position: { type: String, trim: true, default: "" },
   faculty: { type: String, trim: true, default: "" },
   department: { type: String, trim: true, default: "" },
   nicNumber: { type: String, trim: true, default: "", sparse: true },

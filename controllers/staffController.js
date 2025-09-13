@@ -9,8 +9,8 @@ import validator from "validator";
 // POST: Register staff
 export const registerStaff = async (req, res) => {
   try {
-    const { name, username, email, phone, password, role, faculty, department, nicNumber } = req.body;
-    console.log("Received registration data:", { name, username, email, phone, role, faculty, department, nicNumber });
+    const { name, username, email, phone, password, role, faculty, department, nicNumber, position } = req.body;
+    console.log("Received registration data:", { name, username, email, phone, role, faculty, department, nicNumber, position });
 
     // Validate required fields with default for role
     const safeRole = role?.trim() || "security";
@@ -59,6 +59,7 @@ if (!validator.isEmail(email.trim())) {
       password: password.trim(),
       role: safeRole.toLowerCase(),
       userID, // Use the auto-generated User ID
+      position: position?.trim() || "",
       faculty: faculty?.trim() || "",
       department: department?.trim() || "",
       nicNumber: nicNumber?.trim() || "",
@@ -89,6 +90,11 @@ if (!validator.isEmail(email.trim())) {
             <li><strong>User ID:</strong> ${newStaff.userID}</li>
             <li><strong>Username:</strong> ${newStaff.username}</li>
             <li><strong>Role:</strong> ${newStaff.role.charAt(0).toUpperCase() + newStaff.role.slice(1)}</li>
+
+            ${newStaff.position ? `<li><strong>Position:</strong> ${newStaff.position}</li>` : ""}
+            ${newStaff.faculty ? `<li><strong>Faculty:</strong> ${newStaff.faculty}</li>` : ""}
+            ${newStaff.department ? `<li><strong>Department:</strong> ${newStaff.department}</li>` : ""}
+
             <li><strong>Email:</strong> ${newStaff.email}</li>
             <li><strong>Password:</strong> ${password.trim()}</li>
           </ul>
@@ -125,6 +131,9 @@ if (!validator.isEmail(email.trim())) {
           username: newStaff.username,
           email: newStaff.email,
           role: newStaff.role,
+          position: newStaff.position,
+          faculty: newStaff.faculty,
+          department: newStaff.department,
         },
       },
     });
@@ -172,6 +181,7 @@ export const getStaffByRole = async (req, res) => {
       department: user.department || "",
       nicNumber: user.nicNumber || "",
       username: user.username || "",
+       position: user.position || "",
     }));
 
     res.status(200).json(cleanedUsers);
