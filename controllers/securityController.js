@@ -5,7 +5,7 @@ export const getVisitorStats = async (req, res) => {
     // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split("T")[0];
 
-    // Total number of visitors who checked in today
+    //  number of visitors who checked in today (Total)
     const totalCheckedIn = await VerifyVisitor.countDocuments({
       status: "Checked-In",
       date: today,
@@ -22,7 +22,7 @@ export const getVisitorStats = async (req, res) => {
       date: today,
     });
 
-    //Expected
+    //Expected visitor to check in today
     const expectedVisitorsToday = await VerifyVisitor.countDocuments({
       date: today, status: "Awaiting Check-In",
     });
